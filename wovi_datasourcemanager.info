@@ -1,0 +1,5 @@
+name = Worldvision Datasource Manager
+description = Management module for abstract World Vision datasources.
+version = 7.x-Dev
+core = 7.x
+package = World Vision - Global
