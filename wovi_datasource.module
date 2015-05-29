@@ -5,6 +5,35 @@
  * Management module for abstract World Vision datasources.
  */
 
+/**
+ * Implements hook_menu().
+ */
+function wovi_datasource_menu() {
+  $items = array();
+
+  $items['admin/config/development/wovi-datasource'] = array(
+    'title' => 'World Vision - Datasources',
+    'description' => 'Configure all available world vision datasouces.',
+    'page callback' => 'wovi_datasource_config_page',
+    'access arguments' => array('administer wovi datasource'),
+    'file' => 'wovi_datasource.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function wovi_datasource_permission() {
+  return array(
+    'administer wovi datasource' => array(
+      'title' => t('Administer datasources'),
+      'description' => t('Allow user to administer all datasources.'),
+    ),
+  );
+}
 
 /**
  * Get datasource information.
@@ -17,10 +46,9 @@
  * @see hook_wovi_datasource_alter()
  */
 function wovi_datasource_get_info($type = NULL) {
-  // Use the advanced drupal_static() pattern, since this is called very often.
   static $drupal_static_fast;
   if (!isset($drupal_static_fast)) {
-    $drupal_static_fast['datasource_info'] = &drupal_static(__FUNCTION__);
+    $drupal_static_fast['datasource_info'] = &drupal_static(__FUNCTION__, array());
   }
 
   $datasource_info = &$drupal_static_fast['datasource_info'];
@@ -31,6 +59,13 @@ function wovi_datasource_get_info($type = NULL) {
     }
     else {
       $datasource_info = module_invoke_all('wovi_datasource_info');
+
+      // Merge in default values.
+      foreach ($datasource_info as $name => $data) {
+        $datasource_info[$name] += array(
+          'entities' => array(),
+        );
+      }
 
       // Let other modules alter the entity info.
       drupal_alter('wovi_datasource_info', $datasource_info);
