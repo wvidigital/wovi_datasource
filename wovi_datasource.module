@@ -14,10 +14,9 @@ function wovi_datasource_menu() {
   $items['admin/config/development/wovi-datasource'] = array(
     'title' => 'World Vision - Datasources',
     'description' => 'Configure all available world vision datasouces.',
-    'page callback' => 'wovi_datasource_config_page',
+    'page callback' => 'wovi_datasource_configuration_page',
     'access arguments' => array('administer wovi datasource'),
     'file' => 'wovi_datasource.admin.inc',
-    'type' => MENU_NORMAL_ITEM,
   );
 
   return $items;
@@ -31,6 +30,18 @@ function wovi_datasource_permission() {
     'administer wovi datasource' => array(
       'title' => t('Administer datasources'),
       'description' => t('Allow user to administer all datasources.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function wovi_datasource_theme($existing, $type, $theme, $path) {
+  return array(
+    'wovi_datasource_configuration_list' => array(
+      'variables' => array('content' => NULL),
+      'file' => 'wovi_datasource.admin.inc',
     ),
   );
 }
