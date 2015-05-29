@@ -8,8 +8,6 @@
 
 namespace QueryLoader;
 
-error_reporting(E_ALL | E_STRICT);
-
 /**
  * Class QueryLoaderException
  *  Is be used in the QueryLoader.
