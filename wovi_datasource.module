@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @file
+ * Management module for abstract World Vision datasources.
+ */
+
+
+/**
+ * Get datasource information.
+ *
+ * @param $type
+ *   The datasource type, e.g. ivision, for which the info shall be returned, or NULL
+ *   to return an array with info about all types.
+ *
+ * @see hook_wovi_datasource_info()
+ * @see hook_wovi_datasource_alter()
+ */
+function wovi_datasource_get_info($type = NULL) {
+  // Use the advanced drupal_static() pattern, since this is called very often.
+  static $drupal_static_fast;
+  if (!isset($drupal_static_fast)) {
+    $drupal_static_fast['datasource_info'] = &drupal_static(__FUNCTION__);
+  }
+
+  $datasource_info = &$drupal_static_fast['datasource_info'];
+
+  if (empty($datasource_info)) {
+    if ($cache = cache_get('wovi_datasource_info')) {
+      $datasource_info = $cache->data;
+    }
+    else {
+      $datasource_info = module_invoke_all('wovi_datasource_info');
+
+      // Let other modules alter the entity info.
+      drupal_alter('wovi_datasource_info', $datasource_info);
+      cache_set('wovi_datasource_info', $datasource_info);
+    }
+  }
+
+  if (empty($type)) {
+    return $datasource_info;
+  }
+  elseif (isset($datasource_info[$type])) {
+    return $datasource_info[$type];
+  }
+}
+
+/**
+ * Create a new QueryBuilder Object and sets the given
+ *
+ * @param $type
+ *  The type of data to recive in this request.
+ * @return \QueryLoader\QueryLoader
+ * @throws \QueryLoader\QueryLoaderException
+ *
+ * @see \QueryLoader\QueryLoader
+ * @see \QueryLoader\QueryLoaderException
+ */
+function wovi_datasource_select($type) {
+  $loader = new \QueryLoader\QueryLoader();
+  return $loader->select($type);
+}
