@@ -36,7 +36,7 @@ class QueryLoader {
    * @var array
    *  List of conditions for the requested data.
    */
-  private $condition = array();
+  private $conditions = array();
   /**
    * @var array
    *  Quantity of requested datasets.
@@ -89,7 +89,7 @@ class QueryLoader {
   /**
    * Set the condition of your data you are requesting.
    *
-   * @param $type
+   * @param $field
    * @param $value
    * @param null $operator
    *   Conditions for the requested data.
@@ -98,8 +98,8 @@ class QueryLoader {
    * @throws QueryLoaderException
    *  Throws exceptions if the parameters are not valid.
    */
-  public function condition($type, $value, $operator = NULL) {
-    if (isset($type) && $type === '') {
+  public function condition($field, $value, $operator = NULL) {
+    if (isset($field) && $field === '') {
       throw new QueryLoaderException('Condition $type is missing');
     }
     if (isset($value) && $value === '') {
@@ -108,9 +108,12 @@ class QueryLoader {
     if (is_array($operator) || $operator === NULL) {
       throw new QueryLoaderException('Wrong data type for $operator');
     }
-    $this->condition['type'] = $type;
-    $this->condition['value'] = $value;
-    $this->condition['operator'] = $operator;
+
+    $this->conditions[] = array(
+      'field' => $field,
+      'value' => $value,
+      'operator' => $operator
+    );
 
     return $this;
   }
@@ -150,7 +153,7 @@ class QueryLoader {
     return array(
       'select' => $this->select,
       'fields' => $this->fields,
-      'conditions' => $this->condition,
+      'conditions' => $this->conditions,
       'range' => $this->range,
     );
   }
