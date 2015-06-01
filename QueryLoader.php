@@ -6,16 +6,13 @@
  * Time: 16:40
  */
 
-namespace QueryLoader;
-
 /**
  * Class QueryLoaderException
- *  Is be used in the QueryLoader.
+ * Is be used in the QueryLoader.
  * @package QueryLoader
  */
 class QueryLoaderException extends \Exception {
 }
-
 
 /**
  * Class QueryLoader
@@ -52,6 +49,8 @@ class QueryLoader {
    *
    * @param $type
    *  The type of selection. e.g. children, project.
+   * @return QueryLoader/QueryLoader
+   *  Returns the QueryLoader Object itself.
    * @throws QueryLoaderException
    *  Throws exceptions if the parameters are not valid.
    */
@@ -71,6 +70,8 @@ class QueryLoader {
    *
    * @param null $fields
    *  List of names that are requested (optional).
+   * @return QueryLoader/QueryLoader
+   *  Returns the QueryLoader Object itself.
    * @throws QueryLoaderException
    *  Throws exceptions if the parameters are not valid.
    */
@@ -92,6 +93,8 @@ class QueryLoader {
    * @param $value
    * @param null $operator
    *   Conditions for the requested data.
+   * @return QueryLoader/QueryLoader
+   *  Returns the QueryLoader Object itself.
    * @throws QueryLoaderException
    *  Throws exceptions if the parameters are not valid.
    */
@@ -119,6 +122,8 @@ class QueryLoader {
    * @param $from
    * @param $to
    *  Quantity of requested datasets.
+   * @return QueryLoader/QueryLoader
+   *  Returns the QueryLoader Object itself.
    * @throws QueryLoaderException
    *  Throws exceptions if the parameters are not valid.
    */
@@ -135,33 +140,36 @@ class QueryLoader {
     return $this;
   }
 
+  /**
+   * Returns all query relevant information as array.
+   *
+   * @return array
+   *  An associative array with query information.
+   */
+  private function _getQueryInformation() {
+    return array(
+      'select' => $this->select,
+      'fields' => $this->fields,
+      'conditions' => $this->condition,
+      'range' => $this->range,
+    );
+  }
 
   /**
+   * Executes all or one datasource and returns the data.
    *
+   * @param $datasource_name
+   *  A datasource name that should be executed directly. (Default NULL)
+   * @return array
+   *  An associative array with datasource names as key and datasource
+   *  information as value.
    * @throws QueryLoaderException
    */
-  public function execute() {
-    if ($this->select === '' ||
-      count($this->condition) === 0 ||
-      count($this->range) === 0
-    ) {
+  public function execute($datasource_name = NULL) {
+    if ($this->select === '') {
       throw new QueryLoaderException('All necessary parameters have to be set.');
     }
 
-    // @todo help me i am stupid.
+    return wovi_datasource_execute($this->_getQueryInformation(), $datasource_name);
   }
-
-}
-
-try {
-
-  $test = new QueryLoader();
-  $test->select('children')
-    ->condition('age', 5, '<')
-    ->fields()
-    ->range(1, 5)
-    ->execute();
-
-} catch (QueryLoaderException $e) {
-  echo "\n" . $e->getMessage() . "\n\n";
 }
