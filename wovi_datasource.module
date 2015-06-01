@@ -155,7 +155,7 @@ function wovi_datasource_execute($query, $datasource_name = NULL) {
       drupal_alter('wovi_datasource_' . $machine_name . '_result', $result);
 
       // Append result to results.
-      $results += $result;
+      $results[$machine_name] = $result;
     }
   }
 
