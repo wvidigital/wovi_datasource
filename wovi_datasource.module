@@ -69,13 +69,25 @@ function wovi_datasource_get_info($type = NULL) {
       $datasource_info = $cache->data;
     }
     else {
-      $datasource_info = module_invoke_all('wovi_datasource_info');
+      $datasource_info = array();
 
-      // Merge in default values.
-      foreach ($datasource_info as $name => $data) {
-        $datasource_info[$name] += array(
-          'entities' => array(),
-        );
+      // Fetch all modules that implements hook_wovi_datasource_info().
+      $modules = module_implements('wovi_datasource_info');
+      foreach ($modules as $module) {
+        // Fetch all datasource implementations from that module.
+        $info = module_invoke($module, 'wovi_datasource_info');
+        foreach (array_keys($info) as $delta) {
+          // Assign module name to information.
+          $info[$delta]['module'] = $module;
+
+          // Merge in default values.
+          $info[$delta] += array(
+            'entities' => array(),
+          );
+        }
+
+        // Append modules information to common information.
+        $datasource_info += $info;
       }
 
       // Let other modules alter the entity info.
@@ -88,7 +100,7 @@ function wovi_datasource_get_info($type = NULL) {
     return $datasource_info;
   }
   elseif (isset($datasource_info[$type])) {
-    return $datasource_info[$type];
+    return array($type => $datasource_info[$type]);
   }
 }
 
@@ -97,13 +109,58 @@ function wovi_datasource_get_info($type = NULL) {
  *
  * @param $type
  *  The type of data to recive in this request.
- * @return \QueryLoader\QueryLoader
- * @throws \QueryLoader\QueryLoaderException
+ * @return QueryLoader
+ * @throws \QueryLoaderException
  *
- * @see \QueryLoader\QueryLoader
- * @see \QueryLoader\QueryLoaderException
+ * @see QueryLoader
+ * @see QueryLoaderException
  */
 function wovi_datasource_select($type) {
-  $loader = new \QueryLoader\QueryLoader();
+  module_load_include('php', 'wovi_datasource', 'QueryLoader');
+  $loader = new QueryLoader();
   return $loader->select($type);
+}
+
+/**
+ * Executes a query to all or one datasource module.
+ *
+ * @param $query
+ *  The query information array containing the following information:
+ *  - $select: The entity name.
+ *  - $fields: An array of entity field names that should get returned.
+ *  - $conditions: An array of field condition arrays:
+ *    - Each array contains the following information:
+ *      - $field_name: The Field name.
+ *      - $value: The value for this condition:
+ *      - $operator: The operator for the condition. (Default NULL)
+ * @param $datasource_name
+ *  A datasource name that should be executed directly. (Default NULL)
+ * @return array
+ *  An associative array with datasource names as key and datasource
+ *  information as value.
+ *
+ * @see hook_wovi_datasource_execute()
+ * @see hook_wovi_datasource_result_alter()
+ * @see hook_wovi_datasource_DATASOURCE_NAME_result_alter()
+ */
+function wovi_datasource_execute($query, $datasource_name = NULL) {
+  $results = array();
+
+  foreach (wovi_datasource_get_info($datasource_name) as $machine_name => $info) {
+    // Check if the this module implements the requested entity.
+    if (array_key_exists($query['select'], $info['entities'])) {
+      $result = module_invoke($info['module'], 'wovi_datasource_execute', $query, $machine_name);
+
+      // Let other modules alter the result.
+      drupal_alter('wovi_datasource_' . $machine_name . '_result', $result);
+
+      // Append result to results.
+      $results += $result;
+    }
+  }
+
+  // Let other modules the results.
+  drupal_alter('wovi_datasource_results', $results);
+
+  return $results;
 }
