@@ -47,6 +47,13 @@ function wovi_datasource_theme($existing, $type, $theme, $path) {
 }
 
 /**
+ * Implements hook_flush_caches().
+ */
+function wovi_datasource_flush_caches() {
+  return array('wovi_datasource_cache');
+}
+
+/**
  * Get datasource information.
  *
  * @param $type
@@ -144,29 +151,62 @@ function wovi_datasource_select($type) {
  * @see hook_wovi_datasource_DATASOURCE_NAME_result_alter()
  */
 function wovi_datasource_execute($query, $datasource_name = NULL) {
-  $results = array();
+  // Use static cache to improve performance for multiple queries on the same request.
+  static $drupal_static_fast;
+  if (!isset($drupal_static_fast)) {
+    $drupal_static_fast = &drupal_static(__FUNCTION__, array());
+  }
+
+  // Generate cache id.
+  $cid = md5(($datasource_name ? $datasource_name : '') . serialize($query));
+  $cache_bin = variable_get('wovi_datasource_cache_bin', 'wovi_datasource_cache');
 
   // Tell other modules that this query will be executed.
   module_invoke_all('wovi_datasource_pre_execute', $query, $datasource_name);
 
-  foreach (wovi_datasource_get_info($datasource_name) as $machine_name => $info) {
-    // Check if the this module implements the requested entity.
-    if (array_key_exists($query['select'], $info['entities'])) {
-      $result = module_invoke($info['module'], 'wovi_datasource_execute', $query, $machine_name);
+  // Check if current request is already in static cache.
+  if (!isset($drupal_static_fast[$cid])) {
+    // If not check for a HIT in the persistent cache.
+    $cache = cache_get($cid, $cache_bin);
+    if (!$cache) {
+      // If both caches miss fetch results from datasources.
+      $results = array(
+        'data' => array(),
+        'cid' => $cid,
+        'created' => REQUEST_TIME,
+        'expire' => REQUEST_TIME + variable_get('wovi_datasource_cache_expire', 3600),
+      );
 
-      // Let other modules alter the result.
-      drupal_alter('wovi_datasource_' . $machine_name . '_result', $result);
+      foreach (wovi_datasource_get_info($datasource_name) as $machine_name => $info) {
+        // Check if the this module implements the requested entity.
+        if (array_key_exists($query['select'], $info['entities'])) {
+          $result = module_invoke($info['module'], 'wovi_datasource_execute', $query, $machine_name);
 
-      // Append result to results.
-      $results[$machine_name] = $result;
+          // Let other modules alter the result.
+          drupal_alter('wovi_datasource_' . $machine_name . '_result', $result);
+
+          // Append result to results.
+          $results['data'][$machine_name] = $result;
+        }
+      }
+
+      // Let other modules alter the results.
+      drupal_alter('wovi_datasource_results', $results['data']);
+
+      // Write to persistent cache.
+      cache_set($cid, $results, $cache_bin);
+
+      // Append to static cache.
+      $drupal_static_fast[$cid] = $results;
+    }
+    else {
+      // Set static cache.
+      $drupal_static_fast[$cid] = $cache->data;
     }
   }
 
-  // Let other modules the results.
-  drupal_alter('wovi_datasource_results', $results);
-
   // Tell other modules that this execution is done and show the results.
-  module_invoke_all('wovi_datasource_post_execute', $query, $datasource_name, $results);
+  module_invoke_all('wovi_datasource_post_execute', $query, $datasource_name, $drupal_static_fast[$cid]);
 
-  return $results;
+  return $drupal_static_fast[$cid];
 }

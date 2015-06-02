@@ -1,0 +1,22 @@
+<?php
+
+/**
+ * @file
+ * Installation script for world vision datasource module.
+ */
+
+/**
+ * Implements hook_schema().
+ *
+ * Creates an custom cache bin based on drupal's default cache schema.
+ *
+ * @return array
+ *  The database schema.
+ *
+ * @see drupal_get_schema_unprocessed() *
+ */
+function wovi_datasource_schema() {
+  $schema = array();
+  $schema['wovi_datasource_cache'] = drupal_get_schema_unprocessed('system', 'cache');
+  return $schema;
+}
