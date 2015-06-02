@@ -146,6 +146,9 @@ function wovi_datasource_select($type) {
 function wovi_datasource_execute($query, $datasource_name = NULL) {
   $results = array();
 
+  // Tell other modules that this query will be executed.
+  module_invoke_all('wovi_datasource_pre_execute', $query, $datasource_name);
+
   foreach (wovi_datasource_get_info($datasource_name) as $machine_name => $info) {
     // Check if the this module implements the requested entity.
     if (array_key_exists($query['select'], $info['entities'])) {
@@ -161,6 +164,9 @@ function wovi_datasource_execute($query, $datasource_name = NULL) {
 
   // Let other modules the results.
   drupal_alter('wovi_datasource_results', $results);
+
+  // Tell other modules that this execution is done and show the results.
+  module_invoke_all('wovi_datasource_post_execute', $query, $datasource_name, $results);
 
   return $results;
 }
