@@ -46,7 +46,7 @@ class QueryLoader {
    * @var array
    *  Default order of this query.
    */
-  private $orderby = array();
+  private $order = array();
 
 
   /**
@@ -167,8 +167,8 @@ class QueryLoader {
     if (isset($direction) && $direction === '') {
       throw new QueryLoaderException('Argument $direction is missing');
     }
-    $this->orderby['field'] = $field;
-    $this->orderby['direction'] = $direction;
+    $this->order['field'] = $field;
+    $this->order['direction'] = $direction;
 
     return $this;
   }
@@ -185,6 +185,7 @@ class QueryLoader {
       'select' => $this->select,
       'fields' => $this->fields,
       'conditions' => $this->conditions,
+      'order' => $this->order,
       'range' => $this->range,
     );
   }
