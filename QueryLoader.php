@@ -154,13 +154,13 @@ class QueryLoader {
    * @param $field
    *  The field to order the results.
    * @param $direction
-   *  'ASC' for ascending 'DESC' for descending ordering.
+   *  'ASC' for ascending 'DESC' for descending ordering. (Default 'ASC')
    * @return $this
    *  Returns the QueryLoader Object itself.
    * @throws QueryLoaderException
    *  Throws exceptions if the parameters are not valid.
    */
-  public function orderBy($field, $direction) {
+  public function orderBy($field, $direction = 'ASC') {
     if (isset($field) && $field === '') {
       throw new QueryLoaderException('Argument $field is missing');
     }
