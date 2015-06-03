@@ -46,7 +46,7 @@ class QueryLoader {
    * @var array
    *  Default order of this query.
    */
-  private $order = array();
+  private $orderby = array();
 
 
   /**
