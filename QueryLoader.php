@@ -42,6 +42,11 @@ class QueryLoader {
    *  Quantity of requested datasets.
    */
   private $range = array();
+  /**
+   * @var array
+   *  Default order of this query.
+   */
+  private $order = array();
 
 
   /**
@@ -142,6 +147,32 @@ class QueryLoader {
 
     return $this;
   }
+
+  /**
+   * Set the order of the results.
+   *
+   * @param $field
+   *  The field to order the results.
+   * @param $direction
+   *  'ASC' for ascending 'DESC' for descending ordering.
+   * @return $this
+   *  Returns the QueryLoader Object itself.
+   * @throws QueryLoaderException
+   *  Throws exceptions if the parameters are not valid.
+   */
+  public function orderBy($field, $direction) {
+    if (isset($field) && $field === '') {
+      throw new QueryLoaderException('Argument $field is missing');
+    }
+    if (isset($direction) && $direction === '') {
+      throw new QueryLoaderException('Argument $direction is missing');
+    }
+    $this->orderby['field'] = $field;
+    $this->orderby['direction'] = $direction;
+
+    return $this;
+  }
+
 
   /**
    * Returns all query relevant information as array.
