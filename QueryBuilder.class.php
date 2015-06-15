@@ -5,25 +5,32 @@
  * Date: 27.05.15
  * Time: 16:40
  */
+
 /**
- * Class QueryLoaderException
- * Is be used in the QueryLoader.
- * @package QueryLoader
+ * Class QueryBuilderException
+ * Is be used in the QueryBuilder.
+ * @package QueryBuilder
  */
-class QueryLoaderException extends \Exception {
+class QueryBuilderException extends \Exception {
 }
+
 /**
- * Class QueryLoader
+ * Class QueryBuilder
  * @todo Class, methods, parameters.... have to be documented
  *
- * @package QueryLoader
+ * @package QueryBuilder
  */
-class QueryLoader {
+class QueryBuilder {
+  /**
+   * @var
+   *  The type of operation.
+   */
+  private $operator;
   /**
    * @var
    *  The type of selection. e.g. children, project.
    */
-  private $select;
+  private $type;
   /**
    * @var array
    *  List of names that are requested (optional).
@@ -49,22 +56,24 @@ class QueryLoader {
    *  Joined Media data. Very basic join function.
    */
   private $join = array();
+
   /**
    * Set the type of your data you are requesting.
    *
    * @param $type
    *  The type of selection. e.g. children, project.
-   * @return QueryLoader/QueryLoader
-   *  Returns the QueryLoader Object itself.
-   * @throws QueryLoaderException
+   * @return QueryBuilder
+   *  Returns the QueryBuilder Object itself.
+   * @throws QueryBuilderException
    *  Throws exceptions if the parameters are not valid.
    */
   public function select($type) {
     if (isset($type) && $type != '') {
-      $this->select = $type;
+      $this->type = $type;
+      $this->operator = 'select';
     }
     else {
-      throw new QueryLoaderException('Select $type is missing');
+      throw new QueryBuilderException('Select $type is missing');
     }
     return $this;
   }
@@ -72,20 +81,16 @@ class QueryLoader {
   /**
    * Joined Media data. Very basic join function.
    *
+   * @param $type ,
+   *  The type of data to join.
    * @param $args
-   *  The type of data have to be joined. Additional Parameters like width and height can be set optional.
-   * @return QueryLoader/QueryLoader
-   *  Returns the QueryLoader Object itself.
-   * @throws QueryLoaderException
-   *  Throws exceptions if the parameters are not valid.
+   *  Additional Parameters like width and height can be set optional.
+   * @return QueryBuilder
+   *  Returns the QueryBuilder Object itself.
    */
-  public function join($args) {
-    if (is_Array($args) && isset($args['type']) && $args['type'] != '') {
-      $this->join = $args;
-    }
-    else {
-      throw new QueryLoaderException('Type Parameter have to be set.');
-    }
+  public function join($type, $args = array()) {
+    $this->join[$type] = $args;
+
     return $this;
   }
 
@@ -94,9 +99,9 @@ class QueryLoader {
    *
    * @param null $fields
    *  List of names that are requested (optional).
-   * @return QueryLoader/QueryLoader
-   *  Returns the QueryLoader Object itself.
-   * @throws QueryLoaderException
+   * @return QueryBuilder
+   *  Returns the QueryBuilder Object itself.
+   * @throws QueryBuilderException
    *  Throws exceptions if the parameters are not valid.
    */
   public function fields($fields = NULL) {
@@ -104,10 +109,11 @@ class QueryLoader {
       $this->fields = $fields;
     }
     else {
-      throw new QueryLoaderException('Wrong data type for $fields');
+      throw new QueryBuilderException('Wrong data type for $fields');
     }
     return $this;
   }
+
   /**
    * Set the condition of your data you are requesting.
    *
@@ -115,50 +121,51 @@ class QueryLoader {
    * @param $value
    * @param null $operator
    *   Conditions for the requested data.
-   * @return QueryLoader/QueryLoader
-   *  Returns the QueryLoader Object itself.
-   * @throws QueryLoaderException
+   * @return QueryBuilder
+   *  Returns the QueryBuilder Object itself.
+   * @throws QueryBuilderException
    *  Throws exceptions if the parameters are not valid.
    */
   public function condition($field, $value, $operator = NULL) {
     if (isset($field) && $field === '') {
-      throw new QueryLoaderException('Condition $type is missing');
+      throw new QueryBuilderException('Condition $type is missing');
     }
     if (isset($value) && $value === '') {
-      throw new QueryLoaderException('Condition $value is missing');
+      throw new QueryBuilderException('Condition $value is missing');
     }
-    if (is_array($operator) || $operator === NULL) {
-      throw new QueryLoaderException('Wrong data type for $operator');
-    }
+
     $this->conditions[] = array(
       'field' => $field,
       'value' => $value,
       'operator' => $operator
     );
+
     return $this;
   }
+
   /**
    * Set the range of your data you are requesting.
    *
    * @param $from
    * @param $to
    *  Quantity of requested datasets.
-   * @return QueryLoader/QueryLoader
-   *  Returns the QueryLoader Object itself.
-   * @throws QueryLoaderException
+   * @return QueryBuilder
+   *  Returns the QueryBuilder Object itself.
+   * @throws QueryBuilderException
    *  Throws exceptions if the parameters are not valid.
    */
   public function range($from, $to) {
     if (isset($from) && $from === '') {
-      throw new QueryLoaderException('Condition $from is missing');
+      throw new QueryBuilderException('Condition $from is missing');
     }
     if (isset($to) && $to === '') {
-      throw new QueryLoaderException('Condition $to is missing');
+      throw new QueryBuilderException('Condition $to is missing');
     }
     $this->range['from'] = $from;
     $this->range['to'] = $to;
     return $this;
   }
+
   /**
    * Set the order of the results.
    *
@@ -167,21 +174,22 @@ class QueryLoader {
    * @param $direction
    *  'ASC' for ascending 'DESC' for descending ordering. (Default 'ASC')
    * @return $this
-   *  Returns the QueryLoader Object itself.
-   * @throws QueryLoaderException
+   *  Returns the QueryBuilder Object itself.
+   * @throws QueryBuilderException
    *  Throws exceptions if the parameters are not valid.
    */
   public function orderBy($field, $direction = 'ASC') {
     if (isset($field) && $field === '') {
-      throw new QueryLoaderException('Argument $field is missing');
+      throw new QueryBuilderException('Argument $field is missing');
     }
     if (isset($direction) && $direction === '') {
-      throw new QueryLoaderException('Argument $direction is missing');
+      throw new QueryBuilderException('Argument $direction is missing');
     }
     $this->order['field'] = $field;
     $this->order['direction'] = $direction;
     return $this;
   }
+
   /**
    * Returns all query relevant information as array.
    *
@@ -190,7 +198,8 @@ class QueryLoader {
    */
   private function _getQueryInformation() {
     return array(
-      'select' => $this->select,
+      'operator' => $this->operator,
+      'type' => $this->type,
       'join' => $this->join,
       'fields' => $this->fields,
       'conditions' => $this->conditions,
@@ -198,20 +207,29 @@ class QueryLoader {
       'range' => $this->range,
     );
   }
+
   /**
    * Executes all or one datasource and returns the data.
    *
-   * @param $datasource_name
-   *  A datasource name that should be executed directly. (Default NULL)
+   * @param $configuration
+   *  An array with additional configuration for the execution handler:
+   *    - $datasource: If only a specific datasource should be executed. (Default NULL)
+   *    - $cache: If FALSE no cache will be used. (Default TRUE)
    * @return array
    *  An associative array with datasource names as key and datasource
    *  information as value.
-   * @throws QueryLoaderException
+   * @throws QueryBuilderException
    */
-  public function execute($datasource_name = NULL) {
-    if ($this->select === '') {
-      throw new QueryLoaderException('All necessary parameters have to be set.');
+  public function execute($configuration) {
+
+    $configuration = drupal_array_merge_deep($configuration, array(
+      'datasource' => NULL,
+      'cache' => TRUE,
+    ));
+
+    if ($this->operator === '') {
+      throw new QueryBuilderException('All necessary parameters have to be set.');
     }
-    return wovi_datasource_execute($this->_getQueryInformation(), $datasource_name);
+    return wovi_datasource_execute($this->_getQueryInformation(), $configuration);
   }
 }

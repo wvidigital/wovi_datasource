@@ -13,9 +13,17 @@ define('WOVI_DATASOURCE_FIELD_NOT_IMPLEMENTED', '*** NON EXISTING FIELD ***');
 function wovi_datasource_menu() {
   $items = array();
 
-  $items['admin/config/development/wovi-datasource'] = array(
-    'title' => 'World Vision - Datasources',
-    'description' => 'Configure all available world vision datasouces.',
+  $items['admin/config/world-vision/datasource'] = array(
+    'title' => 'Datasource',
+    'description' => 'All datasource related configuration.',
+    'page callback' => 'wovi_datasource_configuration_page',
+    'access arguments' => array('administer wovi datasource'),
+    'file' => 'wovi_datasource.admin.inc',
+  );
+
+  $items['admin/config/world-vision/datasource/instances'] = array(
+    'title' => 'Instances',
+    'description' => 'Configure all available datasource instances.',
     'page callback' => 'wovi_datasource_configuration_page',
     'access arguments' => array('administer wovi datasource'),
     'file' => 'wovi_datasource.admin.inc',
@@ -118,15 +126,15 @@ function wovi_datasource_get_info($type = NULL) {
  *
  * @param $type
  *  The type of data to recive in this request.
- * @return QueryLoader
- * @throws \QueryLoaderException
+ * @return QueryBuilder
+ * @throws QueryBuilderException
  *
- * @see QueryLoader
- * @see QueryLoaderException
+ * @see QueryBuilder
+ * @see QueryBuilderException
  */
 function wovi_datasource_select($type) {
-  module_load_include('php', 'wovi_datasource', 'QueryLoader');
-  $loader = new QueryLoader();
+  module_load_include('class.php', 'wovi_datasource', 'QueryBuilder');
+  $loader = new QueryBuilder();
   return $loader->select($type);
 }
 
@@ -135,15 +143,25 @@ function wovi_datasource_select($type) {
  *
  * @param $query
  *  The query information array containing the following information:
- *  - $select: The entity name.
+ *  - $operator: The query operation (Could be 'select', 'update' or 'insert').
+ *  - $type: The entity name.
+ *  - $join: Additional entity types to join.
  *  - $fields: An array of entity field names that should get returned.
  *  - $conditions: An array of field condition arrays:
  *    - Each array contains the following information:
  *      - $field_name: The Field name.
  *      - $value: The value for this condition:
  *      - $operator: The operator for the condition. (Default NULL)
- * @param $datasource_name
- *  A datasource name that should be executed directly. (Default NULL)
+ *  - $order: An array with settings to order the results.
+ *    - $field: The field to order the results.
+ *    - $direction: 'ASC' for ascending 'DESC' for descending ordering. (Default 'ASC')
+ *  - $range: An array to slice the results.
+ *    - $from: The start value.
+ *    - $amount: The maximal amount of results you want to receive.
+ * @param $configuration
+ *  An array with additional configuration for the execution handler:
+ *    - $datasource: If only a specific datasource should be executed. (Default NULL)
+ *    - $cache: If FALSE no cache will be used. (Default TRUE)
  * @return array
  *  An associative array with datasource names as key and datasource
  *  information as value.
@@ -152,7 +170,7 @@ function wovi_datasource_select($type) {
  * @see hook_wovi_datasource_result_alter()
  * @see hook_wovi_datasource_DATASOURCE_NAME_result_alter()
  */
-function wovi_datasource_execute($query, $datasource_name = NULL) {
+function wovi_datasource_execute($query, $configuration) {
   // Use static cache to improve performance for multiple queries on the same request.
   static $drupal_static_fast;
   if (!isset($drupal_static_fast)) {
@@ -160,11 +178,11 @@ function wovi_datasource_execute($query, $datasource_name = NULL) {
   }
 
   // Generate cache id.
-  $cid = md5(($datasource_name ? $datasource_name : '') . serialize($query));
+  $cid = md5(($configuration['datasource'] ? $configuration['datasource'] : '') . serialize($query));
   $cache_bin = variable_get('wovi_datasource_cache_bin', 'wovi_datasource_cache');
 
   // Tell other modules that this query will be executed.
-  module_invoke_all('wovi_datasource_pre_execute', $query, $datasource_name);
+  module_invoke_all('wovi_datasource_pre_execute', $query, $configuration['datasource']);
 
   // Check if current request is already in static cache.
   if (!isset($drupal_static_fast[$cid])) {
@@ -179,18 +197,20 @@ function wovi_datasource_execute($query, $datasource_name = NULL) {
         'expire' => REQUEST_TIME + variable_get('wovi_datasource_cache_expire', 3600),
       );
 
-      foreach (wovi_datasource_get_info($datasource_name) as $machine_name => $info) {
-        // Check if the this module implements the requested entity.
-        if (array_key_exists($query['select'], $info['entities'])) {
-          $result = module_invoke($info['module'], 'wovi_datasource_execute', $query, $machine_name);
 
-          // Let other modules alter the result.
-          drupal_alter('wovi_datasource_' . $machine_name . '_result', $result);
+      switch ($query['operator']) {
+        case 'select';
+          $results['data'] = wovi_datasource_execute_select($query, $configuration);
+          break;
+        case 'update';
+          $results['data'] = wovi_datasource_execute_update($query, $configuration);
+          break;
+        case 'insert';
+          $results['data'] = wovi_datasource_execute_insert($query, $configuration);
+          break;
 
-          // Append result to results.
-          $results['data'][$machine_name] = $result;
-        }
       }
+
 
       // Let other modules alter the results.
       drupal_alter('wovi_datasource_results', $results['data']);
@@ -208,7 +228,119 @@ function wovi_datasource_execute($query, $datasource_name = NULL) {
   }
 
   // Tell other modules that this execution is done and show the results.
-  module_invoke_all('wovi_datasource_post_execute', $query, $datasource_name, $drupal_static_fast[$cid]);
+  module_invoke_all('wovi_datasource_post_execute', $query, $configuration['datasource'], $drupal_static_fast[$cid]);
 
   return $drupal_static_fast[$cid];
+}
+
+/**
+ * Executes a select query to all or one datasource module.
+ *
+ * @param $query
+ *  The query information array containing the following information:
+ *  - $operator: The query operation (In this case 'select').
+ *  - $type: The entity name.
+ *  - $join: Additional entity types to join.
+ *  - $fields: An array of entity field names that should get returned.
+ *  - $conditions: An array of field condition arrays:
+ *    - Each array contains the following information:
+ *      - $field_name: The Field name.
+ *      - $value: The value for this condition:
+ *      - $operator: The operator for the condition. (Default NULL)
+ *  - $order: An array with settings to order the results.
+ *    - $field: The field to order the results.
+ *    - $direction: 'ASC' for ascending 'DESC' for descending ordering. (Default 'ASC')
+ *  - $range: An array to slice the results.
+ *    - $from: The start value.
+ *    - $amount: The maximal amount of results you want to receive.
+ * @param $configuration
+ *  An array with additional configuration for the execution handler:
+ *    - $datasource: If only a specific datasource should be executed. (Default NULL)
+ *    - $cache: If FALSE no cache will be used. (Default TRUE)
+ * @return array
+ *  An array with datasource results keyed by the primary key.
+ */
+function wovi_datasource_execute_select($query, $configuration) {
+  $results = array();
+
+  foreach (wovi_datasource_get_info($configuration['datasource']) as $machine_name => $info) {
+    // Check if the this module implements the requested entity.
+    if (array_key_exists($query['type'], $info['entities'])) {
+      $result = module_invoke($info['module'], 'wovi_datasource_execute', $query, $machine_name);
+
+      // Let other modules alter the result.
+      drupal_alter('wovi_datasource_' . $machine_name . '_result', $result);
+
+      // Append result to results.
+      $results[$machine_name] = $result;
+    }
+  }
+
+  return $results;
+}
+
+/**
+ * Executes a update query to all or one datasource module.
+ *
+ * @param $query
+ *  The query information array containing the following information:
+ *  - $operator: The query operation (In this case 'update').
+ *  - $type: The entity name.
+ *  - $join: Additional entity types to join.
+ *  - $fields: An array of entity field names that should get returned.
+ *  - $conditions: An array of field condition arrays:
+ *    - Each array contains the following information:
+ *      - $field_name: The Field name.
+ *      - $value: The value for this condition:
+ *      - $operator: The operator for the condition. (Default NULL)
+ *  - $order: An array with settings to order the results.
+ *    - $field: The field to order the results.
+ *    - $direction: 'ASC' for ascending 'DESC' for descending ordering. (Default 'ASC')
+ *  - $range: An array to slice the results.
+ *    - $from: The start value.
+ *    - $amount: The maximal amount of results you want to receive.
+ * @param $configuration
+ *  An array with additional configuration for the execution handler:
+ *    - $datasource: If only a specific datasource should be executed. (Default NULL)
+ *    - $cache: If FALSE no cache will be used. (Default TRUE)
+ * @return array
+ *  An array with datasource results keyed by the primary key.
+ */
+function wovi_datasource_execute_update($query, $configuration) {
+  $results = array();
+
+  return $results;
+}
+
+/**
+ * Executes a insert query to all or one datasource module.
+ *
+ * @param $query
+ *  The query information array containing the following information:
+ *  - $operator: The query operation (In this case 'insert').
+ *  - $type: The entity name.
+ *  - $join: Additional entity types to join.
+ *  - $fields: An array of entity field names that should get returned.
+ *  - $conditions: An array of field condition arrays:
+ *    - Each array contains the following information:
+ *      - $field_name: The Field name.
+ *      - $value: The value for this condition:
+ *      - $operator: The operator for the condition. (Default NULL)
+ *  - $order: An array with settings to order the results.
+ *    - $field: The field to order the results.
+ *    - $direction: 'ASC' for ascending 'DESC' for descending ordering. (Default 'ASC')
+ *  - $range: An array to slice the results.
+ *    - $from: The start value.
+ *    - $amount: The maximal amount of results you want to receive.
+ * @param $configuration
+ *  An array with additional configuration for the execution handler:
+ *    - $datasource: If only a specific datasource should be executed. (Default NULL)
+ *    - $cache: If FALSE no cache will be used. (Default TRUE)
+ * @return array
+ *  An array with datasource results keyed by the primary key.
+ */
+function wovi_datasource_execute_insert($query, $configuration) {
+  $results = array();
+
+  return $results;
 }
