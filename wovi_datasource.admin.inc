@@ -25,6 +25,40 @@ function wovi_datasource_configuration_page() {
   );
 }
 
+function wovi_datasource_settings_form($form, &$form_state) {
+  $form['cache'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Query cache'),
+    '#attributs' => array(),
+  );
+
+  $form['cache']['wovi_datasource_cache_default'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Cache queries if by default.'),
+    '#default_value' => variable_get('wovi_datasource_cache_default', TRUE),
+  );
+
+
+  $form['cache']['reset'] = array(
+    '#type' => 'submit',
+    '#value' => t('Clear query cache'),
+    '#submit' => array('wovi_datasource_settings_form_clear_cache_submit'),
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Submit Handler: Handles the clear cache request.
+ *
+ * @param $form
+ * @param $form_state
+ */
+function wovi_datasource_settings_form_clear_cache_submit($form, &$form_state) {
+  _wovi_datasource_cache_clear();
+  drupal_set_message(t('Datasource Queries cache cleared.'));
+}
+
 /**
  * Theme function: Returns HTML for a list of available node configuration links.
  *

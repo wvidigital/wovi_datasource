@@ -147,22 +147,22 @@ class QueryBuilder {
    * Set the range of your data you are requesting.
    *
    * @param $from
-   * @param $to
+   * @param $amount
    *  Quantity of requested datasets.
    * @return QueryBuilder
    *  Returns the QueryBuilder Object itself.
    * @throws QueryBuilderException
    *  Throws exceptions if the parameters are not valid.
    */
-  public function range($from, $to) {
+  public function range($from, $amount) {
     if (isset($from) && $from === '') {
       throw new QueryBuilderException('Condition $from is missing');
     }
-    if (isset($to) && $to === '') {
+    if (isset($amount) && $amount === '') {
       throw new QueryBuilderException('Condition $to is missing');
     }
     $this->range['from'] = $from;
-    $this->range['to'] = $to;
+    $this->range['to'] = $amount;
     return $this;
   }
 
@@ -214,7 +214,6 @@ class QueryBuilder {
    * @param $configuration
    *  An array with additional configuration for the execution handler:
    *    - $datasource: If only a specific datasource should be executed. (Default NULL)
-   *    - $cache: If FALSE no cache will be used. (Default TRUE)
    * @return array
    *  An associative array with datasource names as key and datasource
    *  information as value.
@@ -224,7 +223,6 @@ class QueryBuilder {
 
     $configuration = drupal_array_merge_deep($configuration, array(
       'datasource' => NULL,
-      'cache' => TRUE,
     ));
 
     if ($this->operator === '') {
