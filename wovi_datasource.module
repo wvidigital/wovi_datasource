@@ -29,6 +29,15 @@ function wovi_datasource_menu() {
     'file' => 'wovi_datasource.admin.inc',
   );
 
+  $items['admin/config/world-vision/datasource/settings'] = array(
+    'title' => 'Settings',
+    'description' => 'Configure the datasource manager.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wovi_datasource_settings_form'),
+    'access arguments' => array('administer wovi datasource'),
+    'file' => 'wovi_datasource.admin.inc',
+  );
+
   return $items;
 }
 
@@ -61,6 +70,28 @@ function wovi_datasource_theme($existing, $type, $theme, $path) {
  */
 function wovi_datasource_flush_caches() {
   return array('wovi_datasource_cache');
+}
+
+/**
+ * Implements hook_admin_menu_cache_info().
+ */
+function wovi_datasource_admin_menu_cache_info() {
+  return array(
+    'wovi_datasource_cache' => array(
+      'title' => t('Datasource Queries'),
+      'callback' => '_wovi_datasource_cache_clear',
+    ),
+  );
+}
+
+/**
+ * Helper function: Clears the query cache for settings form or admin menu
+ *
+ * @param null $cid
+ * @param bool $wildcard
+ */
+function _wovi_datasource_cache_clear($cid = NULL, $wildcard = FALSE) {
+  cache_clear_all($cid, 'wovi_datasource_cache', $wildcard);
 }
 
 /**
@@ -161,7 +192,6 @@ function wovi_datasource_select($type) {
  * @param $configuration
  *  An array with additional configuration for the execution handler:
  *    - $datasource: If only a specific datasource should be executed. (Default NULL)
- *    - $cache: If FALSE no cache will be used. (Default TRUE)
  * @return array
  *  An associative array with datasource names as key and datasource
  *  information as value.
@@ -177,6 +207,11 @@ function wovi_datasource_execute($query, $configuration) {
     $drupal_static_fast = &drupal_static(__FUNCTION__, array());
   }
 
+  if (!isset($configuration['cache'])) {
+    // Get default cache settings.
+    $configuration['cache'] = variable_get('wovi_datasource_cache_default', TRUE);
+  }
+
   // Generate cache id.
   $cid = md5(($configuration['datasource'] ? $configuration['datasource'] : '') . serialize($query));
   $cache_bin = variable_get('wovi_datasource_cache_bin', 'wovi_datasource_cache');
@@ -187,7 +222,10 @@ function wovi_datasource_execute($query, $configuration) {
   // Check if current request is already in static cache.
   if (!isset($drupal_static_fast[$cid])) {
     // If not check for a HIT in the persistent cache.
-    $cache = cache_get($cid, $cache_bin);
+
+
+    $cache = $configuration['cache'] ? cache_get($cid, $cache_bin) : NULL;
+
     if (!$cache) {
       // If both caches miss fetch results from datasources.
       $results = array(
@@ -215,8 +253,10 @@ function wovi_datasource_execute($query, $configuration) {
       // Let other modules alter the results.
       drupal_alter('wovi_datasource_results', $results['data']);
 
-      // Write to persistent cache.
-      cache_set($cid, $results, $cache_bin);
+      if ($configuration['cache']) {
+        // Write to persistent cache.
+        cache_set($cid, $results, $cache_bin);
+      }
 
       // Append to static cache.
       $drupal_static_fast[$cid] = $results;
@@ -256,7 +296,6 @@ function wovi_datasource_execute($query, $configuration) {
  * @param $configuration
  *  An array with additional configuration for the execution handler:
  *    - $datasource: If only a specific datasource should be executed. (Default NULL)
- *    - $cache: If FALSE no cache will be used. (Default TRUE)
  * @return array
  *  An array with datasource results keyed by the primary key.
  */
