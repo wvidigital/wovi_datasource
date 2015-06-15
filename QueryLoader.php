@@ -5,7 +5,6 @@
  * Date: 27.05.15
  * Time: 16:40
  */
-
 /**
  * Class QueryLoaderException
  * Is be used in the QueryLoader.
@@ -13,7 +12,6 @@
  */
 class QueryLoaderException extends \Exception {
 }
-
 /**
  * Class QueryLoader
  * @todo Class, methods, parameters.... have to be documented
@@ -21,7 +19,6 @@ class QueryLoaderException extends \Exception {
  * @package QueryLoader
  */
 class QueryLoader {
-
   /**
    * @var
    *  The type of selection. e.g. children, project.
@@ -47,8 +44,11 @@ class QueryLoader {
    *  Default order of this query.
    */
   private $order = array();
-
-
+  /**
+   * @var array
+   *  Joined Media data. Very basic join function.
+   */
+  private $join = array();
   /**
    * Set the type of your data you are requesting.
    *
@@ -66,7 +66,26 @@ class QueryLoader {
     else {
       throw new QueryLoaderException('Select $type is missing');
     }
+    return $this;
+  }
 
+  /**
+   * Joined Media data. Very basic join function.
+   *
+   * @param $args
+   *  The type of data have to be joined. Additional Parameters like width and height can be set optional.
+   * @return QueryLoader/QueryLoader
+   *  Returns the QueryLoader Object itself.
+   * @throws QueryLoaderException
+   *  Throws exceptions if the parameters are not valid.
+   */
+  public function join($args) {
+    if (is_Array($args) && isset($args['type']) && $args['type'] != '') {
+      $this->join = $args;
+    }
+    else {
+      throw new QueryLoaderException('Type Parameter have to be set.');
+    }
     return $this;
   }
 
@@ -87,10 +106,8 @@ class QueryLoader {
     else {
       throw new QueryLoaderException('Wrong data type for $fields');
     }
-
     return $this;
   }
-
   /**
    * Set the condition of your data you are requesting.
    *
@@ -113,17 +130,13 @@ class QueryLoader {
     if (is_array($operator) || $operator === NULL) {
       throw new QueryLoaderException('Wrong data type for $operator');
     }
-
     $this->conditions[] = array(
       'field' => $field,
       'value' => $value,
       'operator' => $operator
     );
-
     return $this;
   }
-
-
   /**
    * Set the range of your data you are requesting.
    *
@@ -144,10 +157,8 @@ class QueryLoader {
     }
     $this->range['from'] = $from;
     $this->range['to'] = $to;
-
     return $this;
   }
-
   /**
    * Set the order of the results.
    *
@@ -169,11 +180,8 @@ class QueryLoader {
     }
     $this->order['field'] = $field;
     $this->order['direction'] = $direction;
-
     return $this;
   }
-
-
   /**
    * Returns all query relevant information as array.
    *
@@ -183,13 +191,13 @@ class QueryLoader {
   private function _getQueryInformation() {
     return array(
       'select' => $this->select,
+      'join' => $this->join,
       'fields' => $this->fields,
       'conditions' => $this->conditions,
       'order' => $this->order,
       'range' => $this->range,
     );
   }
-
   /**
    * Executes all or one datasource and returns the data.
    *
@@ -204,7 +212,6 @@ class QueryLoader {
     if ($this->select === '') {
       throw new QueryLoaderException('All necessary parameters have to be set.');
     }
-
     return wovi_datasource_execute($this->_getQueryInformation(), $datasource_name);
   }
 }
