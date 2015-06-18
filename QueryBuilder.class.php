@@ -14,6 +14,7 @@
 class QueryBuilderException extends \Exception {
 }
 
+
 /**
  * Class QueryBuilder
  * @todo Class, methods, parameters.... have to be documented
