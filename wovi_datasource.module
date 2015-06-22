@@ -46,7 +46,7 @@ function wovi_datasource_menu() {
  */
 function wovi_datasource_permission() {
   return array(
-    'administer wovi datasource' => array(
+    'administer wovi datasources' => array(
       'title' => t('Administer datasources'),
       'description' => t('Allow user to administer all datasources.'),
     ),
