@@ -153,6 +153,64 @@ function wovi_datasource_get_info($type = NULL) {
 }
 
 /**
+ * Get datasource entity information.
+ *
+ * @param $type
+ *   The datasource entity type, e.g. iv_child, for which the info shall be
+ *   returned, or NULL to return an array with info about all types.
+ *
+ * @see hook_wovi_datasource_entity_info()
+ * @see hook_wovi_datasource_entity_alter()
+ */
+function wovi_datasource_entity_get_info($type = NULL) {
+  static $drupal_static_fast;
+  if (!isset($drupal_static_fast)) {
+    $drupal_static_fast['datasource_entity_info'] = &drupal_static(__FUNCTION__, array());
+  }
+
+  $datasource_entity_info = &$drupal_static_fast['datasource_entity_info'];
+
+  if (empty($datasource_entity_info)) {
+    if ($cache = cache_get('wovi_datasource_entity_info')) {
+      $datasource_entity_info = $cache->data;
+    }
+    else {
+      $datasource_entity_info = array();
+
+      // Fetch all modules that implements hook_wovi_datasource_entity_info().
+      $modules = module_implements('wovi_datasource_entity_info');
+      foreach ($modules as $module) {
+        // Fetch all datasource entity implementations from that module.
+        $info = module_invoke($module, 'wovi_datasource_entity_info');
+        foreach (array_keys($info) as $delta) {
+          // Assign module name to information.
+          $info[$delta]['module'] = $module;
+
+          // Merge in default values.
+          $info[$delta] += array(
+            'entities' => array(),
+          );
+        }
+
+        // Append modules information to common information.
+        $datasource_entity_info += $info;
+      }
+
+      // Let other modules alter the entity info.
+      drupal_alter('wovi_datasource_entity_info', $datasource_entity_info);
+      cache_set('wovi_datasource_entity_info', $datasource_entity_info);
+    }
+  }
+
+  if (empty($type)) {
+    return $datasource_entity_info;
+  }
+  elseif (isset($datasource_entity_info[$type])) {
+    return array($type => $datasource_entity_info[$type]);
+  }
+}
+
+/**
  * Create a new QueryBuilder Object and sets the given
  *
  * @param $type
