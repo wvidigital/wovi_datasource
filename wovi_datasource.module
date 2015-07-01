@@ -188,7 +188,9 @@ function wovi_datasource_entity_get_info($type = NULL) {
 
           // Merge in default values.
           $info[$delta] += array(
-            'entities' => array(),
+            'primray_key' => NULL,
+            'fields' => array(),
+            'joins' => array(),
           );
         }
 
@@ -293,7 +295,6 @@ function wovi_datasource_execute($query, $configuration) {
         'expire' => REQUEST_TIME + variable_get('wovi_datasource_cache_expire', 3600),
       );
 
-
       switch ($query['operator']) {
         case 'select';
           $results['data'] = wovi_datasource_execute_select($query, $configuration);
@@ -362,7 +363,7 @@ function wovi_datasource_execute_select($query, $configuration) {
 
   foreach (wovi_datasource_get_info($configuration['datasource']) as $machine_name => $info) {
     // Check if the this module implements the requested entity.
-    if (array_key_exists($query['type'], $info['entities'])) {
+    if (array_key_exists($query['type'], $info['entities']) && $info['entities'][$query['type']]['select'] === TRUE) {
       $result = module_invoke($info['module'], 'wovi_datasource_execute', $query, $machine_name);
 
       // Let other modules alter the result.
