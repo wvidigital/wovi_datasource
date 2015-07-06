@@ -219,7 +219,7 @@ class QueryBuilder {
    *  information as value.
    * @throws QueryBuilderException
    */
-  public function execute($configuration) {
+  public function execute($configuration = array()) {
 
     $configuration = drupal_array_merge_deep($configuration, array(
       'datasource' => NULL,

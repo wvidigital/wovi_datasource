@@ -69,6 +69,8 @@ function wovi_datasource_theme($existing, $type, $theme, $path) {
  * Implements hook_flush_caches().
  */
 function wovi_datasource_flush_caches() {
+  // @todo maybe there is a nicer way to clear datasource_entity_cache in addition.
+  db_truncate('wovi_datasource_entity_cache')->execute();
   return array('wovi_datasource_cache');
 }
 
@@ -92,6 +94,7 @@ function wovi_datasource_admin_menu_cache_info() {
  */
 function _wovi_datasource_cache_clear($cid = NULL, $wildcard = FALSE) {
   cache_clear_all($cid, 'wovi_datasource_cache', $wildcard);
+  db_truncate('wovi_datasource_entity_cache')->execute();
 }
 
 /**
@@ -195,7 +198,7 @@ function wovi_datasource_entity_get_info($type = NULL) {
           );
 
           // Merge in default values for fields
-          foreach($info[$entity_name]['fields'] as $field_name => $field_info) {
+          foreach ($info[$entity_name]['fields'] as $field_name => $field_info) {
             $field_info += array(
               'label' => $field_name,
               'default_value' => NULL,
@@ -204,7 +207,7 @@ function wovi_datasource_entity_get_info($type = NULL) {
           }
 
           // Merge in default values for joins
-          foreach($info[$entity_name]['joins'] as $join_name => $join_info) {
+          foreach ($info[$entity_name]['joins'] as $join_name => $join_info) {
             $join_info += array(
               'label' => $join_name,
               'parameters' => array(),
@@ -232,11 +235,13 @@ function wovi_datasource_entity_get_info($type = NULL) {
 }
 
 /**
- * Create a new QueryBuilder Object and sets the given
+ * Creates a new QueryBuilder Object for select queries and sets the $type.
  *
  * @param $type
- *  The type of data to recive in this request.
+ *  The type of data to receive in this query.
  * @return QueryBuilder
+ *  A QueryBuilder Object for select queries.
+ *
  * @throws QueryBuilderException
  *
  * @see QueryBuilder
@@ -247,6 +252,26 @@ function wovi_datasource_select($type) {
   $loader = new QueryBuilder();
   return $loader->select($type);
 }
+
+/**
+ * Creates a new QueryBuilder Object for update queries and sets the $type.
+ *
+ * @param $type
+ *  The type of data to update in this query.
+ * @return QueryBuilder
+ *  A QueryBuilder Object for update queries.
+ *
+ * @throws QueryBuilderException
+ *
+ * @see QueryBuilder
+ * @see QueryBuilderException
+ */
+function wovi_datasource_update($type) {
+  module_load_include('class.php', 'wovi_datasource', 'QueryBuilder');
+  $loader = new QueryBuilder();
+  return $loader->update($type);
+}
+
 
 /**
  * Executes a query to all or one datasource module.
@@ -280,73 +305,30 @@ function wovi_datasource_select($type) {
  * @see hook_wovi_datasource_DATASOURCE_NAME_result_alter()
  */
 function wovi_datasource_execute($query, $configuration) {
-  // Use static cache to improve performance for multiple queries on the same request.
-  static $drupal_static_fast;
-  if (!isset($drupal_static_fast)) {
-    $drupal_static_fast = &drupal_static(__FUNCTION__, array());
-  }
-
-  if (!isset($configuration['cache'])) {
-    // Get default cache settings.
-    $configuration['cache'] = variable_get('wovi_datasource_cache_default', TRUE);
-  }
-
-  // Generate cache id.
-  $cid = md5(($configuration['datasource'] ? $configuration['datasource'] : '') . serialize($query));
-  $cache_bin = variable_get('wovi_datasource_cache_bin', 'wovi_datasource_cache');
+  $response = array(
+    'results' => array(),
+  );
 
   // Tell other modules that this query will be executed.
   module_invoke_all('wovi_datasource_pre_execute', $query, $configuration['datasource']);
 
-  // Check if current request is already in static cache.
-  if (!isset($drupal_static_fast[$cid])) {
-    // If not check for a HIT in the persistent cache.
-    $cache = $configuration['cache'] ? cache_get($cid, $cache_bin) : NULL;
-
-    if (!$cache) {
-      // If both caches miss fetch results from datasources.
-      $results = array(
-        'data' => array(),
-        'cid' => $cid,
-        'created' => REQUEST_TIME,
-        'expire' => REQUEST_TIME + variable_get('wovi_datasource_cache_expire', 3600),
-      );
-
-      switch ($query['operator']) {
-        case 'select';
-          $results['data'] = wovi_datasource_execute_select($query, $configuration);
-          break;
-        case 'update';
-          $results['data'] = wovi_datasource_execute_update($query, $configuration);
-          break;
-        case 'insert';
-          $results['data'] = wovi_datasource_execute_insert($query, $configuration);
-          break;
-
-      }
-
-
-      // Let other modules alter the results.
-      drupal_alter('wovi_datasource_results', $results['data']);
-
-      if ($configuration['cache']) {
-        // Write to persistent cache.
-        cache_set($cid, $results, $cache_bin);
-      }
-
-      // Append to static cache.
-      $drupal_static_fast[$cid] = $results;
-    }
-    else {
-      // Set static cache.
-      $drupal_static_fast[$cid] = $cache->data;
-    }
+  switch ($query['operator']) {
+    case 'select';
+      $response = wovi_datasource_execute_select($query, $configuration);
+      break;
+    case 'update';
+      $response = wovi_datasource_execute_update($query, $configuration);
+      break;
+    case 'insert';
+      $response = wovi_datasource_execute_insert($query, $configuration);
+      break;
   }
 
-  // Tell other modules that this execution is done and show the results.
-  module_invoke_all('wovi_datasource_post_execute', $query, $configuration['datasource'], $drupal_static_fast[$cid]);
+  module_invoke_all('wovi_datasource_post_execute', $query, $configuration['datasource'], $response);
 
-  return $drupal_static_fast[$cid];
+  return $response;
+
+
 }
 
 /**
@@ -376,22 +358,80 @@ function wovi_datasource_execute($query, $configuration) {
  *  An array with datasource results keyed by the primary key.
  */
 function wovi_datasource_execute_select($query, $configuration) {
-  $results = array();
+  static $drupal_static_fast;
 
-  foreach (wovi_datasource_get_info($configuration['datasource']) as $machine_name => $info) {
-    // Check if the this module implements the requested entity.
-    if (array_key_exists($query['type'], $info['entities']) && $info['entities'][$query['type']]['select'] === TRUE) {
-      $result = module_invoke($info['module'], 'wovi_datasource_execute', $query, $machine_name);
+  if (!isset($drupal_static_fast)) {
+    $drupal_static_fast = &drupal_static(__FUNCTION__, array());
+  }
 
-      // Let other modules alter the result.
-      drupal_alter('wovi_datasource_' . $machine_name . '_result', $result);
+  if (!isset($configuration['cache'])) {
+    // Get default cache settings.
+    $configuration['cache'] = variable_get('wovi_datasource_cache_default', TRUE);
+  }
 
-      // Append result to results.
-      $results[$machine_name] = $result;
+  // Generate cache id.
+  $cid = md5(($configuration['datasource'] ? $configuration['datasource'] : '') . serialize($query));
+  $cache_bin = variable_get('wovi_datasource_cache_bin', 'wovi_datasource_cache');
+
+  // Tell other modules that this query will be executed.
+  module_invoke_all('wovi_datasource_pre_execute_select', $query, $configuration['datasource']);
+
+  // Check if current request is already in static cache.
+  if (!isset($drupal_static_fast[$cid])) {
+
+    // If not check for a HIT in the persistent cache.
+    $cache = $configuration['cache'] ? cache_get($cid, $cache_bin) : NULL;
+
+    if (!$cache) {
+      // If both caches miss fetch results from datasources.
+      $results = array();
+      foreach (wovi_datasource_get_info($configuration['datasource']) as $machine_name => $info) {
+        // Check if the this module implements the requested entity.
+        if (array_key_exists($query['type'], $info['entities']) && $info['entities'][$query['type']]['select'] === TRUE) {
+          $result = module_invoke($info['module'], 'wovi_datasource_execute', $query, $machine_name);
+
+          // Let other modules alter the result.
+          drupal_alter('wovi_datasource_' . $machine_name . '_result', $result);
+
+          // Save datasource entity relation to database.
+          wovi_datasource_query_cache_set(array_keys($result), $query['type'], $cid);
+
+          // Append result to results.
+          $results[$machine_name] = $result;
+        }
+      }
+
+      // Build response.
+      $response = array(
+        'data' => $results,
+        'cache' => array(
+          'cid' => $cid,
+          'created' => REQUEST_TIME,
+          'expire' => REQUEST_TIME + variable_get('wovi_datasource_cache_expire', 3600),
+        ),
+      );
+
+      // Let other modules alter the results.
+      drupal_alter('wovi_datasource_select_results', $response['data']);
+
+      if ($configuration['cache']) {
+        // Write to persistent cache.
+        cache_set($cid, $response, $cache_bin);
+      }
+
+      // Append to static cache.
+      $drupal_static_fast[$cid] = $response;
+    }
+    else {
+      // Set static cache.
+      $drupal_static_fast[$cid] = $cache->data;
     }
   }
 
-  return $results;
+  // Tell other modules that this execution is done and show the results.
+  module_invoke_all('wovi_datasource_post_execute_select', $query, $configuration['datasource'], $drupal_static_fast[$cid]);
+
+  return $drupal_static_fast[$cid];
 }
 
 /**
@@ -423,6 +463,10 @@ function wovi_datasource_execute_select($query, $configuration) {
  */
 function wovi_datasource_execute_update($query, $configuration) {
   $results = array();
+
+dpm($query);
+  // Remove cached queries matching the quried entities.
+  //wovi_datasource_query_cache_clear();
 
   return $results;
 }
@@ -458,4 +502,73 @@ function wovi_datasource_execute_insert($query, $configuration) {
   $results = array();
 
   return $results;
+}
+
+/**
+ * @param $primary_keys
+ *  One or multiple primary keys for the given $datasource_entity_type.
+ * @param $datasource_entity_type
+ *  The type of the datasource entity.
+ * @param $cid
+ *  The cache id.
+ */
+function wovi_datasource_query_cache_set($primary_keys, $datasource_entity_type, $cid) {
+  foreach ($primary_keys as $primary_key) {
+    $record = (object) array(
+      'cid' => $cid,
+      'datasource_entity_type' => $datasource_entity_type,
+      'primary_key' => $primary_key,
+      'timestamp' => REQUEST_TIME,
+    );
+
+    try {
+      // Try to insert entry.
+      drupal_write_record('wovi_datasource_entity_cache', $record);
+    } catch (PDOException $e) {
+      if ($e->getCode() == 23000) {
+        // Update entry.
+        drupal_write_record('wovi_datasource_entity_cache', $record, array(
+          'cid',
+          'datasource_entity_type',
+          'primary_key',
+        ));
+      }
+    }
+  }
+}
+
+/**
+ * Clears all queries from cache where datasource entities are related matching
+ * $datasource_entity_type and $primary_keys.
+ *
+ * @param $primary_keys
+ *  The primary key of the entity or entities.
+ * @param $datasource_entity_type
+ *  The entity datasource type.
+ */
+function wovi_datasource_query_cache_clear($primary_keys, $datasource_entity_type) {
+  // Standardize $primary_keys to an array.
+  if (!is_array($primary_keys)) {
+    $primary_keys = array($primary_keys);
+  }
+
+  // Get all affected $cids from database.
+  $cids = db_select('wovi_datasource_entity_cache', 'wdec')
+    ->fields('wdec', array('cid'))
+    ->condition('datasource_entity_type', $datasource_entity_type)
+    ->condition('primray_key', $primary_keys)
+    ->execute()
+    ->fetchAllKeyed();
+
+  // Get cache bin.
+  $cache_bin = variable_get('wovi_datasource_cache_bin', 'wovi_datasource_cache');
+
+  // Clear all affected cached queries.
+  cache_clear_all($cids, $cache_bin);
+
+  // Also delete relations from
+  db_delete('wovi_datasource_entity_cache')
+    ->condition('datasource_entity_type', $datasource_entity_type)
+    ->condition('primary_key', $primary_keys)
+    ->execute();
 }
