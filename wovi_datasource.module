@@ -182,16 +182,35 @@ function wovi_datasource_entity_get_info($type = NULL) {
       foreach ($modules as $module) {
         // Fetch all datasource entity implementations from that module.
         $info = module_invoke($module, 'wovi_datasource_entity_info');
-        foreach (array_keys($info) as $delta) {
+        foreach (array_keys($info) as $entity_name) {
           // Assign module name to information.
-          $info[$delta]['module'] = $module;
+          $info[$entity_name]['module'] = $module;
 
           // Merge in default values.
-          $info[$delta] += array(
-            'primray_key' => NULL,
+          $info[$entity_name] += array(
+            'label' => $entity_name,
+            'description' => '',
             'fields' => array(),
             'joins' => array(),
           );
+
+          // Merge in default values for fields
+          foreach($info[$entity_name]['fields'] as $field_name => $field_info) {
+            $field_info += array(
+              'label' => $field_name,
+              'default_value' => NULL,
+            );
+            $info[$entity_name]['fields'][$field_name] = $field_info;
+          }
+
+          // Merge in default values for joins
+          foreach($info[$entity_name]['joins'] as $join_name => $join_info) {
+            $join_info += array(
+              'label' => $join_name,
+              'parameters' => array(),
+            );
+            $info[$entity_name]['joins'][$join_name] = $join_info;
+          }
         }
 
         // Append modules information to common information.
@@ -282,8 +301,6 @@ function wovi_datasource_execute($query, $configuration) {
   // Check if current request is already in static cache.
   if (!isset($drupal_static_fast[$cid])) {
     // If not check for a HIT in the persistent cache.
-
-
     $cache = $configuration['cache'] ? cache_get($cid, $cache_bin) : NULL;
 
     if (!$cache) {
