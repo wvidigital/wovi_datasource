@@ -406,17 +406,21 @@ function wovi_datasource_execute_select($query, $configuration) {
               wovi_datasource_query_cache_set(array_keys($datasource_result['results']), $query['type'], $cid);
             }
 
-            // Append result to results.
+            // Append datasource result to results.
             $results[$machine_name] = $datasource_result['results'];
 
-            // Append additional ifnromation.
+            // Append additional datasource information.
             unset($datasource_result['results']);
             $extra[$machine_name] = $datasource_result;
 
           }
           else {
-            // Append empty array
+            // Append datasource result to results.
             $results[$machine_name] = array();
+
+            // Append additional datasource information.
+            unset($datasource_result['results']);
+            $extra[$machine_name] = $datasource_result;
           }
         }
       }
