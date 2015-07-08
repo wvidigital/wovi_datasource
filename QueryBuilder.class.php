@@ -220,14 +220,15 @@ class QueryBuilder {
    * @throws QueryBuilderException
    */
   public function execute($configuration = array()) {
-
-    $configuration = drupal_array_merge_deep($configuration, array(
+    $configuration += array(
       'datasource' => NULL,
-    ));
+      'cache' => variable_get('wovi_datasource_cache_default', TRUE),
+    );
 
     if ($this->operator === '') {
       throw new QueryBuilderException('All necessary parameters have to be set.');
     }
+
     return wovi_datasource_execute($this->_getQueryInformation(), $configuration);
   }
 }
