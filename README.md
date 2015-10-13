@@ -15,7 +15,7 @@ $response = wovi_datasource_select("iv_children")
 ))->execute();
 ```
 
-*For more example see the Obelix Datasource Bundle - Documentation*
+*For more examples see the Obelix Datasource Bundle - Documentation*
 
 
 **Requires:**
