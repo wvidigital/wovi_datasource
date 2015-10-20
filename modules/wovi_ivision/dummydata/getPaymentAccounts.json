@@ -1,0 +1,24 @@
+[
+  {
+    "bankName": "John Smith",
+    "custBankAccSSN": "000000-1",
+    "bankAccountHolder": "",
+    "bankBranchNo": "081",
+    "bankCode": "00000002",
+    "bankAccNo": "29081041627907",
+    "ABI": "",
+    "BBAN": "",
+    "CAB": "",
+    "transitNo": "",
+    "bankIDNo": "",
+    "oeNBRegistrationNo": "",
+    "SWIFT": "",
+    "IBAN": "",
+    "creditCardType": "",
+    "creditCardNo": 0,
+    "crCardSecNo": 0,
+    "crCardHolder": "",
+    "crCardExMonth": 1,
+    "crCardExYear": 1753
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "childID": "169171-0878",
+    "mediaCode": "VID",
+    "derivativeName": "iPad",
+    "contentType": "CGV",
+    "approvalStatus": 2,
+    "url": "http://media.worldvision.org/csi/100145/PUST/100145-PUST_20121009_175118_CGV_iPad.mp4",
+    "mediaDateTime": "2012-10-09T17:51:18"
+  },
+  {
+    "childID": "169171-0878",
+    "mediaCode": "VID",
+    "derivativeName": "iPad",
+    "contentType": "CGV",
+    "approvalStatus": 2,
+    "url": "http://media.worldvision.org/csi/198157/PPPQ/198157-PPPQ_20121009_175118_CGV_iPad.mp4",
+    "mediaDateTime": "2012-10-09T17:51:18"
+  },
+  {
+    "childID": "169171-0878",
+    "mediaCode": "VID",
+    "derivativeName": "iPad",
+    "contentType": "CGV",
+    "approvalStatus": 2,
+    "url": "http://media.worldvision.org/csi/100145/PUST/100145-PUST_20121009_175100_CGV_iPad.mp4",
+    "mediaDateTime": "2012-10-09T17:51:00"
+  },
+  {
+    "childID": "169171-0878",
+    "mediaCode": "VID",
+    "derivativeName": "iPad",
+    "contentType": "CGV",
+    "approvalStatus": 2,
+    "url": "http://media.worldvision.org/csi/169171/PXWX/169171-PXWX_20120904_093256_CGV_iPad.mp4",
+    "mediaDateTime": "2012-09-04T09:32:56"
+  }
+]

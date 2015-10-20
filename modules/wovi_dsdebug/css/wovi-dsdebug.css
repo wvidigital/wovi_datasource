@@ -1,0 +1,11 @@
+.js .wovi-dsdebug-log .info-row {
+    cursor: pointer;
+}
+
+.js .wovi-dsdebug-log .result-row {
+    display: none;
+}
+
+.js .wovi-dsdebug-log .result-row.open {
+    display: table-row;
+}

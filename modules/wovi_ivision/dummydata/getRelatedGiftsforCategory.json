@@ -1,0 +1,15 @@
+[
+  {
+    "iVisionID": 7,
+    "name": "Nothilfepacket",
+    "shortDescription": "Schnell und Direkt helfen",
+    "longDescription": "This is mydescriptionsplit across lines",
+    "isShareable": false,
+    "sharePrice": 70.00000000000000000000,
+    "unitPrice": 70.00000000000000000000,
+    "hasLimitedInventory": false,
+    "inventoryQuantity": 500.00000000000000000000,
+    "isDefaultGift": true,
+    "isSpecialGift": false
+  }
+]

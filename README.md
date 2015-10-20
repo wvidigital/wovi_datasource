@@ -20,4 +20,4 @@ $response = wovi_datasource_select("iv_children")
 
 **Requires:**
 
-- [wovi_admin](https://bitbucket.org/worldvisionglobal/wovi_admin)
+- [wovi_admin](https://github.com/wvidigital/wovi_admin)

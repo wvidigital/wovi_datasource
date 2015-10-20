@@ -1,0 +1,190 @@
+[
+  {
+    "code": "17",
+    "description": "Baron"
+  },
+  {
+    "code": "18",
+    "description": "Baronin"
+  },
+  {
+    "code": "100",
+    "description": "Company"
+  },
+  {
+    "code": "44",
+    "description": "Damen und Herren"
+  },
+  {
+    "code": "5",
+    "description": "Eheleute"
+  },
+  {
+    "code": "3",
+    "description": "Familie"
+  },
+  {
+    "code": "2",
+    "description": "Frau"
+  },
+  {
+    "code": "32",
+    "description": "Frau Diakonin"
+  },
+  {
+    "code": "36",
+    "description": "Frau Direktorin"
+  },
+  {
+    "code": "34",
+    "description": "Frau Oberin"
+  },
+  {
+    "code": "30",
+    "description": "Frau Pastorin"
+  },
+  {
+    "code": "28",
+    "description": "Frau Pfarrerin"
+  },
+  {
+    "code": "43",
+    "description": "Frau und Herrn"
+  },
+  {
+    "code": "6",
+    "description": "Fräulein"
+  },
+  {
+    "code": "15",
+    "description": "Freifrau"
+  },
+  {
+    "code": "14",
+    "description": "Freiherr"
+  },
+  {
+    "code": "16",
+    "description": "Freiin"
+  },
+  {
+    "code": "19",
+    "description": "Fürst"
+  },
+  {
+    "code": "20",
+    "description": "Fürstin"
+  },
+  {
+    "code": "41",
+    "description": "Geschwister"
+  },
+  {
+    "code": "21",
+    "description": "Graf"
+  },
+  {
+    "code": "22",
+    "description": "Gräfin"
+  },
+  {
+    "code": "1",
+    "description": "Herrn"
+  },
+  {
+    "code": "31",
+    "description": "Herrn Diakon"
+  },
+  {
+    "code": "35",
+    "description": "Herrn Direktor"
+  },
+  {
+    "code": "37",
+    "description": "Herrn General"
+  },
+  {
+    "code": "33",
+    "description": "Herrn Kaplan"
+  },
+  {
+    "code": "39",
+    "description": "Herrn Konsul"
+  },
+  {
+    "code": "38",
+    "description": "Herrn Major"
+  },
+  {
+    "code": "29",
+    "description": "Herrn Pastor"
+  },
+  {
+    "code": "26",
+    "description": "Herrn Pater"
+  },
+  {
+    "code": "27",
+    "description": "Herrn Pfarrer"
+  },
+  {
+    "code": "40",
+    "description": "Herrn Rektor"
+  },
+  {
+    "code": "4",
+    "description": "Herrn und Frau"
+  },
+  {
+    "code": "101",
+    "description": "Klasse"
+  },
+  {
+    "code": "12",
+    "description": "Madame"
+  },
+  {
+    "code": "11",
+    "description": "Monsieur"
+  },
+  {
+    "code": "7",
+    "description": "Mr"
+  },
+  {
+    "code": "9",
+    "description": "Mr and Mrs"
+  },
+  {
+    "code": "8",
+    "description": "Mrs"
+  },
+  {
+    "code": "10",
+    "description": "Ms"
+  },
+  {
+    "code": "42",
+    "description": "Oberschwester"
+  },
+  {
+    "code": "23",
+    "description": "Prinz"
+  },
+  {
+    "code": "24",
+    "description": "Prinzessin"
+  },
+  {
+    "code": "13",
+    "description": "Schwester"
+  },
+  {
+    "code": "25",
+    "description": "Sr."
+  },
+  {
+    "code": "0",
+    "description": "Unbekannt"
+  }
+]

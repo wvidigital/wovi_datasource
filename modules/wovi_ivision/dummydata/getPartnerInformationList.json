@@ -1,0 +1,32 @@
+[
+  {
+    "partnerID": "000002454",
+    "firstName": "Yannick",
+    "initials": "",
+    "surname": "EVAIN",
+    "salutationCode": "3",
+    "jobTitle": "",
+    "languageCode": "FRA",
+    "addressType": "PERSON",
+    "houseNo": "2 ",
+    "street": "esplanade Salvador Allende",
+    "address": "2 esplanade Salvador Allende",
+    "address2": "",
+    "address3": "",
+    "city": "ARGENTEUIL",
+    "county": "",
+    "countryRegionCode": "FRA",
+    "postCode": "95100",
+    "phoneNo": "01 39 61 96 82",
+    "phoneNoPrivate": "01 39 61 96 82",
+    "faxNoPrivate": "",
+    "extension": "",
+    "mobilePhone": "",
+    "eMail": "yannevain@alicemail.fr",
+    "eMail2": "yannevain@alicemail.fr",
+    "companyNo": "000002454",
+    "companyName": "",
+    "createAt": "2005-07-08T00:00:00",
+    "partnerStatus": "Donor"
+  }
+]

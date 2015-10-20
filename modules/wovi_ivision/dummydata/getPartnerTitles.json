@@ -1,0 +1,70 @@
+[
+  {
+    "code": "1",
+    "description": "Dr."
+  },
+  {
+    "code": "10",
+    "description": "Dr. pharm."
+  },
+  {
+    "code": "11",
+    "description": "Dr. phil."
+  },
+  {
+    "code": "12",
+    "description": "Dr. Dr."
+  },
+  {
+    "code": "13",
+    "description": "Dres."
+  },
+  {
+    "code": "14",
+    "description": "Prof."
+  },
+  {
+    "code": "15",
+    "description": "Prof. Dr."
+  },
+  {
+    "code": "16",
+    "description": "Prof. Dr. Ing."
+  },
+  {
+    "code": "17",
+    "description": "Prof. Dr. med."
+  },
+  {
+    "code": "2",
+    "description": "Dr. dent."
+  },
+  {
+    "code": "3",
+    "description": "Dr. Dr. h.c."
+  },
+  {
+    "code": "4",
+    "description": "Dr. Gfn."
+  },
+  {
+    "code": "5",
+    "description": "Dr. Ing."
+  },
+  {
+    "code": "6",
+    "description": "Dr. jur."
+  },
+  {
+    "code": "7",
+    "description": "Dr. med."
+  },
+  {
+    "code": "8",
+    "description": "Dr. med. dent."
+  },
+  {
+    "code": "9",
+    "description": "Dr. med. vet."
+  }
+]
