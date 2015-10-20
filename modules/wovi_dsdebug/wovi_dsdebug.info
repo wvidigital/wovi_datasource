@@ -1,6 +1,6 @@
 name = Worldvision Datasource Debugger
 description = Debugger module for Word Vision Datasources.
-version = 7.x-1.0
+version = 7.x-1.1
 core = 7.x
 package = World Vision - Global
 
