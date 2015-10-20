@@ -1,0 +1,1242 @@
+<?php
+
+/**
+ * @file
+ * This module provides a debugging layer for wovi datasource queries and a
+ * simple query builder form to execute datasource queries directly from the
+ * administration pages without cache.
+ *
+ * The datasource logger collects every executed query and its results for the
+ * current request and displays them as table at the bottom of the page.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function wovi_dsdebug_menu() {
+  $items = array();
+
+  $items['admin/config/world-vision/datasource/debugger'] = array(
+    'title' => 'Data Test Framework',
+    'description' => 'Build custom queries via the debugger form.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wovi_dsdebug_debugger_form'),
+    'access arguments' => array('access wovi dsdebug log'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function wovi_dsdebug_theme($existing, $type, $theme, $path) {
+  return array(
+    'wovi_dsdebug_table' => array(
+      'variables' => array(
+        'logs' => NULL,
+      ),
+    ),
+    'wovi_dsdebug_query_code' => array(
+      'variables' => array(
+        'query' => NULL,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_libraries_info().
+ */
+function wovi_dsdebug_libraries_info() {
+  $libraries = array();
+
+  $libraries['prismjs'] = array(
+    'name' => 'PrismJS',
+    'vendor url' => 'http://prismjs.com',
+    'download url' => 'http://prismjs.com/download.html',
+    'version arguments' => array(
+      'file' => 'prism.js',
+      // Prismjs has no version so just check if we got a file with the url an php in the first line.
+      'pattern' => '/(prismjs\.com).+(php)/',
+      'lines' => 1,
+    ),
+    'files' => array(
+      'js' => array('prism.js'),
+      'css' => array('prism.css'),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function wovi_dsdebug_permission() {
+  return array(
+    'access wovi dsdebug log' => array(
+      'title' => t('Access query log'),
+      'description' => t('Displays a query log at the bottom of the page.'),
+    )
+  );
+}
+
+/**
+ * Implements hook_wovi_datasource_pre_execute()
+ *
+ * @see wovi_datasource_execute()
+ * @see hook_wovi_datasource_pre_execute()
+ */
+function wovi_dsdebug_wovi_datasource_pre_execute($query, $datasource_name) {
+  if (!user_access('access wovi dsdebug log')) {
+    return;
+  }
+
+  module_load_include('class.php', 'wovi_dsdebug', 'DSLogger');
+
+  // Write new entry to log.
+  DSLogger::writeEntry(array(
+    'datasource_name' => $datasource_name,
+    'query' => $query,
+    'response' => array(),
+    'start' => microtime(TRUE),
+    'stop' => NULL,
+  ));
+}
+
+/**
+ * Implements hook_wovi_datasource_post_execute()
+ *
+ * @see wovi_datasource_execute()
+ * @see hook_wovi_datasource_post_execute()
+ */
+function wovi_dsdebug_wovi_datasource_post_execute($query, $datasource_name, $response) {
+  if (!user_access('access wovi dsdebug log')) {
+    return;
+  }
+
+  module_load_include('class.php', 'wovi_dsdebug', 'DSLogger');
+
+  // Get/Remove latest log entry.
+  if ($entry = DSLogger::getLatestEntry()) {
+    DSLogger::resetLatestEntry();
+
+    // Append results an stop time.
+    $entry['response'] = $response;
+    $entry['stop'] = microtime(TRUE);
+
+    DSLogger::writeEntry($entry);
+  }
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function wovi_dsdebug_page_alter(&$page) {
+  if (!user_access('access wovi dsdebug log')) {
+    return;
+  }
+
+  module_load_include('class.php', 'wovi_dsdebug', 'DSLogger');
+
+  drupal_add_css(drupal_get_path('module', 'wovi_dsdebug') . '/css/wovi-dsdebug.css');
+  drupal_add_js(drupal_get_path('module', 'wovi_dsdebug') . '/js/wovi-dsdebug.js');
+
+  $rows = array();
+  foreach (DSLogger::getLog() as $delta => $row) {
+    // Check cache status
+    $cache_status = 'x';
+    if ($row['response']['cache']) {
+      if ($row['response']['cache']['status'] == WOVI_DATASOURCE_CACHE_HIT) {
+        $cache_status = '√';
+      }
+    }
+
+    $rows[] = array(
+      'data' => array(
+        ($delta + 1),
+        $cache_status,
+        number_format($row['stop'] - $row['start'], 6),
+        wovi_dsdebug_build_query_string($row['query']),
+      ),
+      'data-toggle' => '.result-row-' . $delta,
+      'class' => array(
+        'info-row',
+        'info-row-' . $delta
+      )
+    );
+
+    $rows[] = array(
+      'data' => array(
+        array(
+          'data' => wovi_dsdebug_response_table($row['response']),
+          'colspan' => 4,
+        )
+      ),
+      'class' => array(
+        'result-row',
+        'result-row-' . $delta,
+      ),
+    );
+  }
+
+  $page['page_bottom']['wovi_dsdebug'] = array(
+    '#theme' => 'table',
+    '#header' => array(
+      '#',
+      'Cache',
+      'Time (ms)',
+      'Query',
+    ),
+    '#rows' => $rows,
+    '#attributes' => array(
+      'class' => array(
+        'wovi-dsdebug-log',
+      ),
+    ),
+    '#empty' => t('No queries at this request.'),
+    '#weight' => 999,
+  );
+}
+
+/**
+ * Generates a sql style / readlable query string from the query paramters.
+ *
+ * @param $query
+ *  The query array.
+ * @return string
+ *  A human readable query string.
+ */
+function wovi_dsdebug_build_query_string($query) {
+  $string = '';
+
+  // Append SELECT / FROM.
+  if (isset($query['type'])) {
+    $string .= 'SELECT ';
+    if ($query['fields']) {
+      $string .= implode(', ', $query['fields']) . ' ';
+    }
+    else {
+      $string .= ' * ';
+    }
+    $string .= 'FROM ' . $query['type'];
+  }
+
+  // @todo append UPDATE.
+  // ...
+
+  // @todo append INSERT.
+  // ...
+
+  // Append all conditions.
+  if (!empty($query['conditions'])) {
+    $conditions = array();
+    foreach ($query['conditions'] as $condition) {
+      $conditions[] = $condition['field'] . ' ' .
+        $condition['operator'] . ' ' .
+        $condition['value'];
+    }
+    $string .= ' WHERE ' . implode('AND', $conditions);
+  }
+
+  // Append order by.
+  if (!empty($query['order'])) {
+    $string .= ' ORDER BY ' . $query['order']['field'] .
+      ' ' . (($query['order']['direction'] == SORT_ASC) ? 'ASC' : 'DESC');
+  }
+
+  return $string;
+}
+
+/**
+ * Builds the table of result values.
+ *
+ * @param $response
+ *  An multidimensional array with results keyed by the primary key.
+ *  Each result is keyed by the column names.
+ * @return string
+ *  The HTML Markup.
+ */
+function wovi_dsdebug_response_table($response) {
+  $output = '';
+
+  foreach ($response['results'] as $datasource_name => $datasource_results) {
+    $rows = array();
+
+    // Convert multidimensional arrays to html list.
+    if ($response['extra'][$datasource_name]['error'] === FALSE) {
+      $header = array_keys(reset($datasource_results));
+      foreach ($datasource_results as $row_index => $row_data) {
+        $rows[$row_index] = isset($rows[$row_index]) ? $rows[$row_index] : array();
+        foreach ($row_data as $column_index => $column_data) {
+          $rows[$row_index][$column_index] = isset($row[$row_index][$column_index]) ? $row[$row_index][$column_index] : NULL;
+          $rows[$row_index][$column_index] = wovi_dsdebug_normalie_result($column_data, 3);
+        }
+      }
+    }
+    else {
+      $header = array(t('Error') . ':');
+      $rows[] = array($response['extra'][$datasource_name]['error']);
+    }
+
+    if ($rows) {
+      $table = array(
+        '#theme' => 'table',
+        '#header' => $header,
+        '#caption' => t('Response from %name', array(
+          '%name' => $datasource_name,
+        )),
+        '#rows' => $rows,
+        '#empty' => t('No results'),
+      );
+
+      $output .= drupal_render($table);
+    }
+    else {
+      $output .= '<div>' . t('No results') . '</div>';
+    }
+  }
+
+  return $output;
+}
+
+/**
+ * Helper function: Normalize result.
+ *
+ * @param $data
+ *  The result cell.
+ * @param int $depth
+ *  Set how deep you want to display the array. (Default -1)
+ * @return string
+ *  The HTML markup for the item list.
+ */
+function wovi_dsdebug_normalie_result($data, $depth = -1) {
+  if (is_null($data)) {
+    return '<em>NULL</em>';
+  }
+  elseif (!is_array($data)) {
+    return $data;
+  }
+
+  $items = array();
+
+  foreach ($data as $key => $value) {
+    $items[] = '<strong>' . $key . ':</strong> ' . wovi_dsdebug_normalie_result($value, ($depth > 0) ? $depth - 1 : $depth);
+  }
+
+  return theme_item_list(array(
+    'items' => $items,
+    'title' => NULL,
+    'type' => 'ul',
+    'attributes' => array(
+      'class' => array(
+        'multidimensional-result',
+      )
+    )
+  ));
+}
+
+/**
+ * Generates the debugger form for the testframework.
+ *
+ * With this form users can test and/or build custom datasource queries.
+ *
+ * @param $form
+ * @param $form_state
+ * @return mixed
+ */
+function wovi_dsdebug_debugger_form($form, &$form_state) {
+  // Get the current storage from the form state.
+  $storage = &wovi_dsdebug_debugger_form_storage($form_state);
+
+  // Collapse all fieldsets if form was submited by the execute button.
+  $collapsed = isset($form_state['triggering_element']) && ($form_state['triggering_element']['#parents'][0] == 'submit');
+
+  $form['query'] = array(
+    '#type' => 'container',
+    '#attributes' => array(),
+    '#prefix' => '<div id="wovi-dsdebug-ajax-wrapper">',
+    '#suffix' => '</div>',
+    '#tree' => FALSE,
+  );
+
+  // We need this multiple times in this form.
+  $ajax_settings = array(
+    'callback' => 'wovi_dsdebug_debugger_form_ajax',
+    'wrapper' => 'wovi-dsdebug-ajax-wrapper',
+    'method' => 'replace',
+    'effect' => 'fade',
+  );
+
+  // Operation selector.
+  $form['query']['operation'] = array(
+    '#type' => 'select',
+    '#title' => t('Operation'),
+    '#options' => array(
+      'insert' => 'Insert',
+      'select' => 'Select',
+      'update' => 'Update',
+      'delete' => 'Delete',
+    ),
+    '#empty_option' => '-- ' . t('Select') . ' --',
+    '#ajax' => $ajax_settings,
+  );
+
+  // Type selector.
+  if ($storage['operation']) {
+    $form['query']['type'] = array(
+      '#type' => 'select',
+      '#title' => t('Type'),
+      '#options' => _wovi_dsdebug_debugger_form_type_options($form_state['values']['operation']),
+      '#empty_option' => '-- ' . t('Select') . ' --',
+      '#ajax' => $ajax_settings,
+    );
+  }
+
+  // Field selector.
+  if ($storage['type']) {
+    // Get all fields fot the selected type.
+    $field_options = _wovi_dsdebug_debugger_form_field_options($storage['type']);
+
+    if ($storage['joins']) {
+      $join_options = _wovi_dsdebug_debugger_form_join_options($form_state['values']['type']);
+      foreach (array_keys($storage['joins']) as $field_name) {
+        $field_options[$field_name] = $join_options[$field_name] . ' (Joined)';
+      }
+    }
+
+    $form['query']['fields'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Fields'),
+      '#collapsible' => TRUE,
+      '#collapsed' => $collapsed,
+      '#tree' => TRUE,
+    );
+
+    // Display all selected fields.
+    foreach (array_keys($storage['fields']) as $value) {
+      $form['query']['fields'][$value] = array(
+        '#type' => 'container',
+        '#attributes' => array(),
+        '#tree' => TRUE,
+      );
+
+      $form['query']['fields'][$value]['field'] = array(
+        '#markup' => $field_options[$value] . '&nbsp;',
+      );
+      $form['query']['fields'][$value]['remove'] = array(
+        '#type' => 'button',
+        '#name' => 'remove_field_' . $value,
+        '#value' => t('Remove'),
+        '#ajax' => $ajax_settings,
+      );
+
+      // Remove from available options.
+      unset($field_options[$value]);
+    }
+
+    // Allow to add more fields if some are available.
+    if ($field_options) {
+      $form['query']['fields']['add_field'] = array(
+        '#type' => 'container',
+        '#tree' => TRUE,
+      );
+
+      $form['query']['fields']['add_field']['value'] = array(
+        '#type' => 'select',
+        '#options' => $field_options,
+        '#empty_option' => '-- ' . t('Select') . ' --',
+      );
+      $form['query']['fields']['add_field']['add'] = array(
+        '#type' => 'button',
+        '#value' => t('Add'),
+        '#name' => 'add_field',
+        '#ajax' => $ajax_settings,
+      );
+    }
+  }
+
+  // Condition builder.
+  if ($storage['type']) {
+    // Get all selected fields and make them available for conditions.
+    $condition_fields = empty($storage['fields']) ?
+      _wovi_dsdebug_debugger_form_field_options($storage['type']) :
+      $storage['fields'];
+
+    $form['query']['conditions'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Conditions'),
+      '#collapsible' => TRUE,
+      '#collapsed' => $collapsed,
+      '#tree' => TRUE,
+    );
+
+    // Display all selected conditions.
+    foreach ($storage['conditions'] as $delta => $condition) {
+      $form['query']['conditions'][$delta] = array(
+        '#type' => 'container',
+        '#attributes' => array(),
+        '#tree' => TRUE,
+      );
+
+      $form['query']['conditions'][$delta]['field'] = array(
+        '#markup' => $condition['field'] . ' ' . $condition['operator'] . ' ' . $condition['value'] . '&nbsp;'
+      );
+
+      $form['query']['conditions'][$delta]['remove'] = array(
+        '#type' => 'button',
+        '#name' => 'remove_condition_' . $delta,
+        '#value' => t('Remove'),
+        '#ajax' => $ajax_settings,
+      );
+
+      // Make unavailable for additional conditions.
+      unset($condition_fields[$condition['field']]);
+    }
+
+    // Allow to add more fields if some are available.
+    if ($condition_fields) {
+      $form['query']['conditions']['add_condition'] = array(
+        '#type' => 'container',
+        '#tree' => TRUE,
+      );
+
+      $form['query']['conditions']['add_condition']['field'] = array(
+        '#type' => 'select',
+        '#title' => t('Field'),
+        '#options' => $condition_fields,
+        '#empty_option' => '-- ' . t('Select') . ' --',
+      );
+      $form['query']['conditions']['add_condition']['value'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Value'),
+        '#size' => 29,
+      );
+      $form['query']['conditions']['add_condition']['operator'] = array(
+        '#type' => 'select',
+        '#title' => t('Operator'),
+        '#options' => array(
+          '=' => t('Equal'),
+          '!=' => t('No equal'),
+          '>' => t('Greater than'),
+          '>=' => t('Greater or equal'),
+          '<' => t('Lower than'),
+          '<=' => t('Lower or equal'),
+          'LIKE' => t('Like'),
+        ),
+        '#default_value' => '=',
+      );
+      $form['query']['conditions']['add_condition']['add'] = array(
+        '#type' => 'button',
+        '#name' => 'add_condition',
+        '#value' => t('Add'),
+        '#ajax' => $ajax_settings,
+      );
+    }
+  }
+
+  // Join builder.
+  if ($storage['type']) {
+    $join_options = _wovi_dsdebug_debugger_form_join_options($form_state['values']['type']);
+
+    // Allow to add joinable fields to our query
+    if ($join_options) {
+      $form['query']['joins'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Joins'),
+        '#collapsible' => TRUE,
+        '#collapsed' => $collapsed,
+        '#tree' => TRUE,
+      );
+
+      // Display all selected joins.
+      foreach ($storage['joins'] as $field_name => $parameters) {
+        $arguments = array();
+
+        foreach ($parameters as $key => $value) {
+          if ($value) {
+            $arguments[] = $key . ': ' . $value;
+          }
+        }
+
+        $form['query']['joins'][$field_name] = array(
+          '#type' => 'container',
+          '#attributes' => array(),
+          '#tree' => TRUE,
+        );
+
+        $form['query']['joins'][$field_name]['field'] = array(
+          '#markup' => $join_options[$field_name] .
+            ($arguments ? ' (' . implode(', ', $arguments) . ')' : '')
+            . '&nbsp;',
+        );
+
+        $form['query']['joins'][$field_name]['remove'] = array(
+          '#type' => 'button',
+          '#name' => 'remove_join_' . $field_name,
+          '#value' => t('Remove'),
+          '#ajax' => $ajax_settings,
+        );
+
+        // Make unavailable for additional joins.
+        unset($join_options[$field_name]);
+      }
+
+      $form['query']['joins']['add_join'] = array(
+        '#type' => 'container',
+        '#tree' => TRUE,
+      );
+
+      $form['query']['joins']['add_join']['type'] = array(
+        '#type' => 'select',
+        '#options' => $join_options,
+        '#empty_option' => '-- ' . t('Select') . ' --',
+        '#ajax' => $ajax_settings,
+      );
+
+      // Check if we need to collect some join parameters.
+      if ($form_state['triggering_element']['#parents'][0] === 'joins' &&
+        $form_state['triggering_element']['#parents'][1] === 'add_join' &&
+        $form_state['triggering_element']['#parents'][2] === 'type'
+      ) {
+        // Load selected join parameters.
+        $field_name = $form_state['values']['joins']['add_join']['type'];
+        $join_parameters = _wovi_dsdebug_debugger_form_join_parameters($storage['type'], $field_name);
+        foreach ($join_parameters as $parameter => $default_value) {
+          $form['query']['joins']['add_join'][$parameter] = array(
+            '#type' => 'textfield',
+            '#title' => $parameter,
+            '#attributes' => array(),
+            '#default_value' => $default_value,
+          );
+        }
+
+        $form['query']['joins']['add_join']['add'] = array(
+          '#type' => 'button',
+          '#value' => t('Add'),
+          '#name' => 'add_join',
+          '#ajax' => $ajax_settings,
+        );
+      }
+
+
+    }
+  }
+
+  // Order settings
+  if ($storage['type']) {
+    // Get all selected fields and make them available as order option.
+    $order_options = empty($storage['fields']) ?
+      _wovi_dsdebug_debugger_form_field_options($storage['type']) :
+      $storage['fields'];
+
+    // Append joined fields.
+    if ($storage['joins']) {
+      $join_options = _wovi_dsdebug_debugger_form_join_options($form_state['values']['type']);
+      foreach (array_keys($storage['joins']) as $field_name) {
+        $order_options[$field_name] = $join_options[$field_name] . ' (Joined)';
+      }
+    }
+
+    $form['query']['order'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Order By'),
+      '#collapsible' => TRUE,
+      '#collapsed' => $collapsed,
+      '#tree' => TRUE,
+    );
+
+    $form['query']['order']['field'] = array(
+      '#type' => 'select',
+      '#options' => $order_options,
+      '#empty_option' => '-- ' . t('Nothing') . ' --',
+      '#ajax' => $ajax_settings,
+    );
+
+    $form['query']['order']['direction'] = array(
+      '#type' => 'select',
+      '#options' => array(
+        'ASC' => t('Ascending'),
+        'DESC' => t('Descending')
+      ),
+      '#default_value' => 'ASC',
+      '#ajax' => $ajax_settings,
+    );
+  }
+
+  // Range settings
+  if ($storage['type']) {
+    $form['query']['range'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Range'),
+      '#collapsible' => TRUE,
+      '#collapsed' => $collapsed,
+      '#tree' => TRUE,
+    );
+
+    $form['query']['range']['from'] = array(
+      '#type' => 'textfield',
+      '#title' => t('From'),
+      '#ajax' => $ajax_settings,
+    );
+
+    $form['query']['range']['amount'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Amount'),
+      '#ajax' => $ajax_settings,
+    );
+  }
+
+  // Execute Settings
+  if ($storage['type']) {
+    $form['query']['settings'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Settings'),
+      '#collapsible' => TRUE,
+      '#collapsed' => $collapsed,
+      '#tree' => TRUE,
+    );
+
+    if (variable_get('wovi_datasource_cache_default', TRUE)) {
+      $form['query']['settings']['cache'] = array(
+        '#type' => 'checkbox',
+        '#title' => 'Disable Cache',
+        '#ajax' => $ajax_settings,
+      );
+    }
+  }
+
+  // Generate a PHP code preview.
+  if ($storage['operation'] && $storage['type']) {
+
+    $code = theme('wovi_dsdebug_query_code', array(
+      'query' => $storage,
+    ));
+
+    $form['query']['code_preview'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Code preview'),
+      '#attributes' => array(),
+      'php' => array(
+        '#markup' => wovi_dsdebug_prettify_print($code, TRUE)
+      ),
+    );
+  }
+
+  // Form actions.
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Execute'),
+  );
+
+  return $form;
+}
+
+/**
+ * Ajax callback for wovi_dsdebug_debugger_form().
+ *
+ * @param $form
+ * @param $form_state
+ * @return mixed
+ *  The new rendered query element.
+ *
+ * @see wovi_dsdebug_debugger_form()
+ */
+function wovi_dsdebug_debugger_form_ajax($form, &$form_state) {
+  return $form['query'];
+}
+
+/**
+ * Submit handler for wovi_dsdebug_debugger_form().
+ *
+ * Exeutes the generated query, builds the dummy code and sets the rebuild flag
+ * in $form_state to get sure the form is rendered with the latest selection.
+ *
+ * @param $form
+ * @param $form_state
+ *
+ * @see wovi_dsdebug_debugger_form()
+ */
+function wovi_dsdebug_debugger_form_submit($form, &$form_state) {
+  // Rebuild form to keep last selection.
+  $form_state['rebuild'] = TRUE;
+
+  $storage = $form_state['storage'];
+
+  if ($storage['operation'] && $storage['type']) {
+    switch ($storage['operation']) {
+      case 'select':
+        // Build datasource select query.
+        $query = wovi_datasource_select($storage['type']);
+
+        // Add fields.
+        if ($storage['fields']) {
+          $query->fields(array_keys($storage['fields']));
+        }
+
+        // Add all conditions.
+        foreach ($storage['conditions'] as $condition) {
+          $query->condition(
+            $condition['field'],
+            $condition['value'],
+            $condition['operator']
+          );
+        }
+
+        // Add all joins.
+        foreach ($storage['joins'] as $name => $attributes) {
+          $query->join($name, $attributes);
+        }
+
+        // Set order field.
+        if ($storage['order']['field']) {
+          $query->orderBy($storage['order']['field'], $storage['order']['direction']);
+        }
+
+        // Set result range.
+        if ($storage['range']['amount']) {
+          $from = $storage['range']['from'] ? $storage['range']['from'] : 0;
+          $query->range($from, $storage['range']['amount']);
+        }
+
+        // Execute with settings.
+        $response = $query->execute($storage['settings']);
+
+        if (function_exists('dpm')) {
+          dpm($response, 'Query Builder Response');
+        }
+
+        break;
+      default:
+        drupal_set_message(t('Not yet implemented'), 'error');
+        break;
+    }
+  }
+}
+
+/**
+ * Helper function to get a predefined storage for our debugger multistep form.
+ *
+ * @param $form_state
+ * @return array
+ *  The current or an empty storage.
+ *
+ * @see wovi_dsdebug_debugger_form()
+ */
+function &wovi_dsdebug_debugger_form_storage(&$form_state) {
+
+  if (!isset($form_state['storage'])) {
+    // Define a base structure for our storage.
+    $form_state['storage'] = array();
+  }
+  else {
+    // Analysing the current form state values an update the storage.
+    $values = &$form_state['values'];
+    $storage = &$form_state['storage'];
+
+    if (isset($values['operation']) && !empty($values['operation'])) {
+      $storage['operation'] = $values['operation'];
+    }
+    else {
+      // Clean up storage and form_state.
+      $storage = array();
+      $values = array();
+    }
+
+    if (isset($values['type']) && !empty($values['type'])) {
+      $storage['type'] = $values['type'];
+    }
+    else {
+      // Clean up related storage elements.
+      unset($storage['type']);
+      unset($storage['fields']);
+      unset($storage['conditions']);
+      unset($storage['joins']);
+    }
+  }
+
+  if (isset($form_state['triggering_element'])) {
+    // Check if we need to add or remove a field.
+    if ($form_state['triggering_element']['#parents'][0] === 'fields') {
+      if ($form_state['triggering_element']['#parents'][1] === 'add_field') {
+        if (empty($form_state['values']['fields']['add_field']['value'])) {
+          // @todo find a way to handle this error ...
+          drupal_set_message(t('Please select a field.'), 'error');
+        }
+        else {
+          // Save value to storage
+          $field_options = _wovi_dsdebug_debugger_form_field_options($storage['type']);
+          $value = $form_state['values']['fields']['add_field']['value'];
+          $storage['fields'][$value] = $field_options[$value];
+
+          if (count($storage['fields']) == 1) {
+            // If we change the fields from empty, which means query all fields,
+            // to a specific field we need to get sure that we don't use an
+            // unqueried field in the conditions.
+            foreach ($storage['conditions'] as $delta => $condition) {
+              if ($condition['field'] != $value) {
+                unset($storage['conditions'][$delta]);
+              }
+            }
+          }
+        }
+      }
+      elseif ($form_state['triggering_element']['#parents'][2] === 'remove') {
+        $value = $form_state['triggering_element']['#parents'][1];
+        unset($storage['fields'][$value]);
+
+        // Search and remove the field from conditions.
+        foreach ($storage['conditions'] as $delta => $condition) {
+          if ($condition['field'] === $value) {
+            unset($storage['conditions'][$delta]);
+          }
+        }
+      }
+    }
+
+    // Check if we need to add or remove a condition.
+    if ($form_state['triggering_element']['#parents'][0] === 'conditions') {
+      if ($form_state['triggering_element']['#parents'][1] === 'add_condition') {
+        if (empty($form_state['values']['conditions']['add_condition']['field']) ||
+          empty($form_state['values']['conditions']['add_condition']['value'])
+        ) {
+          // @todo find a way to handle this error ...
+          drupal_set_message(t('Please select a field and value for your condition.'), 'error');
+        }
+        else {
+          $field = $form_state['values']['conditions']['add_condition']['field'];
+
+          // Save condition to storage
+          $condition = array(
+            'field' => $field,
+            'value' => $form_state['values']['conditions']['add_condition']['value'],
+            'operator' => $form_state['values']['conditions']['add_condition']['operator'],
+          );
+          $storage['conditions'][] = $condition;
+        }
+      }
+      elseif ($form_state['triggering_element']['#parents'][2] === 'remove') {
+        $delta = $form_state['triggering_element']['#parents'][1];
+        unset($storage['conditions'][$delta]);
+      }
+    }
+
+    // Check if we need to add or remove a join.
+    if ($form_state['triggering_element']['#parents'][0] === 'joins') {
+      if ($form_state['triggering_element']['#parents'][1] === 'add_join' &&
+        $form_state['triggering_element']['#name'] == 'add_join'
+      ) {
+
+        $parameters = $form_state['values']['joins']['add_join'];
+        $join_fieldname = $parameters['type'];
+
+        // Clean up parameters.
+        unset($parameters['type'], $parameters['add']);
+
+        $storage['joins'][$join_fieldname] = $parameters;
+      }
+      elseif ($form_state['triggering_element']['#parents'][2] === 'remove') {
+        $delta = $form_state['triggering_element']['#parents'][1];
+        unset($storage['joins'][$delta]);
+      }
+    }
+
+    // Set order by field.
+    if ($form_state['triggering_element']['#parents'][0] === 'order') {
+      if ($values['order']['field']) {
+        $storage['order'] = $values['order'];
+      }
+      else {
+        unset($storage['order']);
+      }
+    }
+
+    // Set result range
+    if ($form_state['triggering_element']['#parents'][0] === 'range') {
+      // The start item.
+      if ($form_state['triggering_element']['#parents'][1] === 'from') {
+        $storage['range']['from'] = $values['range']['from'];
+      }
+
+      // The amount of results.
+      if ($form_state['triggering_element']['#parents'][1] === 'amount') {
+        $storage['range']['amount'] = $values['range']['amount'];
+      }
+    }
+
+    // Toggle Cache.
+    if ($form_state['triggering_element']['#parents'][0] === 'settings' &&
+      $form_state['triggering_element']['#parents'][1] === 'cache'
+    ) {
+      if ($form_state['values']['settings']['cache']) {
+        $storage['settings']['cache'] = FALSE;
+      }
+      else {
+        unset($storage['settings']['cache']);
+      }
+    }
+  }
+
+  // Append default values.
+  $form_state['storage'] += array(
+    'operation' => NULL,
+    'type' => NULL,
+    'fields' => array(),
+    'conditions' => array(),
+    'joins' => array(),
+    'order' => array(),
+    'range' => array(),
+    'settings' => array(),
+  );
+
+  $form_state['storage']['order'] += array(
+    'field' => NULL,
+    'direction' => 'ASC',
+  );
+
+  $form_state['storage']['range'] += array(
+    'from' => NULL,
+    'amount' => NULL,
+  );
+
+  return $form_state['storage'];
+}
+
+/**
+ * Helper function to generate prettify code markup.
+ *
+ * @param $code
+ *  The code that should printed prettified.
+ * @param bool $return
+ *  If TRUE the function will return the prettified code instead of printing it (Default: FALSE)
+ * @return string
+ *  The $code wrapped by an <pre> element.
+ *
+ * @todo
+ *  Include prettify by implementing libraries modules.
+ */
+function wovi_dsdebug_prettify_print($code, $return = FALSE) {
+
+  if (($library = libraries_load('prismjs')) && !empty($library['loaded'])) {
+    drupal_add_js(drupal_get_path('module', 'wovi_dsdebug') . '/js/wovi-dsdebug-prism.js');
+  }
+  elseif (user_access('administer software updates')) {
+    drupal_set_message(t('Install prismjs library for syntax highlighting.'), 'warning');
+  }
+
+  $code = '<pre><code class="language-php" style="padding: 10px; border: 0;">' . $code . '</code></pre>';
+
+  if ($return) {
+    return $code;
+  }
+
+  print $code;
+}
+
+/**
+ * Helper function to collect all datasource entities that can be queried by
+ * the $operator by one or more datasources.
+ *
+ * @param $operation
+ *  A string that specifies the operation. Possible values could be:
+ *    - 'select'
+ *    - 'update'
+ *    - 'insert'
+ *    - 'delete'
+ * @return array
+ *  An array of datasource entities keyed by machine_name => label.
+ */
+function _wovi_dsdebug_debugger_form_type_options($operation) {
+  $options = array();
+
+  $ds_entity_info = wovi_datasource_entity_get_info();
+
+  foreach (wovi_datasource_get_info() as $datasource) {
+    foreach ($datasource['entities'] as $entity_name => $entity_operations) {
+      if ($entity_operations[$operation] === TRUE) {
+        $options[$entity_name] = $ds_entity_info[$entity_name]['label'];
+      }
+    }
+  }
+
+  return $options;
+}
+
+/**
+ * Helper function to collect all fields for an datasource entity.
+ *
+ * @param $type
+ *  The datasource entity machine_name.
+ * @return array
+ *  An array of fields keyed by machine_name => label.
+ */
+function _wovi_dsdebug_debugger_form_field_options($type) {
+  $static = drupal_static(__FUNCTION__, array());
+
+  if (!isset($static[$type])) {
+    $ds_entity_info = wovi_datasource_entity_get_info($type);
+    if (isset($ds_entity_info[$type])) {
+      foreach ($ds_entity_info[$type]['fields'] as $machine_name => $info) {
+        $static[$type][$machine_name] = $info['label'];
+      }
+    }
+  }
+
+  return $static[$type];
+}
+
+/**
+ * Helper function to collect all joinable entities for one datasource entity.
+ *
+ * @param $type
+ *  The datasource entity machine_name.
+ * @return array
+ *  An array of datasource entities keyed by machine_name => $info.
+ */
+function _wovi_dsdebug_debugger_form_join_options($type) {
+  $options = array();
+
+  $ds_entity_info = wovi_datasource_entity_get_info();
+
+  if (isset($ds_entity_info[$type])) {
+    foreach ($ds_entity_info[$type]['joins'] as $field_name => $info) {
+      $options[$field_name] = $info['label'];
+    }
+  }
+
+  return $options;
+}
+
+/**
+ * Helper function to get join field parameters.
+ *
+ * @param $type
+ *  The datasource entity type.
+ * @param $field_name
+ *  The join field name.
+ * @return array
+ *  An array with parameters.
+ */
+function _wovi_dsdebug_debugger_form_join_parameters($type, $field_name) {
+  $parameters = array();
+
+  $ds_entity_info = wovi_datasource_entity_get_info();
+
+  if (isset($ds_entity_info[$type])) {
+    $parameters = $ds_entity_info[$type]['joins'][$field_name]['parameters'];
+  }
+
+  return $parameters;
+}
+
+/**
+ * Theme function to render query information to readable php code.
+ *
+ * @param $variables
+ *  - $query: An associatives array with query information:
+ *    - $operation: The type of query operation (e.g. 'select')
+ *    - $type: The datasource entity type that is queried.
+ *    - $fields: An associatives array with field machine names as key and labels as value.
+ *    - $joins: An array of join information arrays keyed by the join machine name:
+ *      - Each array contains an individual amount of parameters in the form $key => $value:
+ *    - $conditions: An array of field condition arrays:
+ *      - Each array contains the following information:
+ *      - $field_name: The Field name.
+ *      - $value: The value for this condition:
+ *      - $operator: The operator for the condition. (Default NULL)
+ * @todo implement this theme variables:
+ *      - $order:
+ *      - $range
+ *  - $settings: An array with additional settings for the execute callback.
+ *
+ *
+ * @return string
+ *  The HTML Markup.
+ */
+function theme_wovi_dsdebug_query_code($variables) {
+  $query = $variables['query'];
+
+  // Operation.
+  $output = '$result = wovi_datasource_' . $query['operation'] . '("' . $query['type'] . '")';
+
+  // Fields
+  if ($query['fields']) {
+    $output .= "\n" . '->fields(array(' . "\n";
+    foreach (array_keys($query['fields']) as $field) {
+      $output .= '  "' . $field . '",' . "\n";
+    }
+    $output .= '))';
+  }
+
+  // Conditions
+  if ($query['conditions']) {
+    foreach ($query['conditions'] as $condition) {
+      $output .= "\n" . '->condition("' . $condition['field'] . '", "';
+      $output .= $condition['value'] . '"';
+
+      if ($condition['operator'] != '=') {
+        $output .= ', "' . $condition['operator'] . '"';
+      }
+
+      $output .= ')';
+    }
+  }
+
+  // Joins
+  if ($query['joins']) {
+    foreach ($query['joins'] as $field_name => $arguments) {
+      $output .= "\n" . '->join("' . $field_name . '"';
+
+      if ($arguments) {
+        $output .= ', array(' . "\n";
+        foreach ($arguments as $key => $value) {
+          if (strlen(trim($value)) > 0) {
+            $output .= '  "' . $key . '" => "' . $value . '",' . "\n";
+          }
+        }
+        $output .= ')';
+      }
+
+      $output .= ')';
+    }
+  }
+
+  // Order
+  if ($query['order']['field']) {
+    $output .= "\n" . '->orderBy("' . $query['order']['field'] . '"';
+
+    if ($query['order']['direction'] == 'DESC') {
+      $output .= ', "DESC"';
+    }
+
+    $output .= ')';
+  }
+
+  // Range.
+  if ($query['range']['amount']) {
+    $from = $query['range']['from'] ? $query['range']['from'] : 0;
+    $output .= "\n" . '->range(' . $from . ', ' . $query['range']['amount'] . ')';
+  }
+
+  // Execute
+  $output .= "\n" . '->execute(';
+  if ($query['settings']) {
+    $output .= 'array(' . "\n";
+    foreach ($query['settings'] as $key => $value) {
+      if (is_bool($value)) {
+        $value = ($value ? 'TRUE' : 'FALSE');
+      }
+      else {
+        $value = '"' . $value . '"';
+      }
+
+      $output .= '  "' . $key . '" => ' . $value . ",\n";
+    }
+    $output .= ')';
+  }
+  $output .= ');';
+
+  return $output;
+}

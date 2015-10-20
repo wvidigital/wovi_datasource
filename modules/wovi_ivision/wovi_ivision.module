@@ -1,0 +1,1419 @@
+<?php
+
+/**
+ * @file
+ * Provides access to iVision data.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function wovi_ivision_menu() {
+  $items = array();
+
+  $items['admin/config/world-vision/datasource/instances/ivision'] = array(
+    'title' => 'iVision API',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wovi_ivision_settings_form'),
+    'access arguments' => array('administer wovi datasources'),
+    'file' => 'wovi_ivision.admin.inc',
+  );
+
+  $items['admin/test'] = array(
+    'title' => 'iVision API',
+    'page callback' => 'test',
+    'file' => 'Test.inc',
+  );
+
+
+  return $items;
+}
+
+/**
+ * Implements hook_wovi_datasource_info().
+ */
+function wovi_ivision_wovi_datasource_info() {
+  $instances = array();
+
+  foreach (variable_get('wovi_ivision_settings', array()) as $machine_name => $setting) {
+    $instances['ivision_' . $machine_name] = array(
+      'name' => $setting['name'] . ' (iVision)',
+      'description' => t('Endpoint: !uri', array(
+        '!uri' => $setting['uri'],
+      )),
+      'entities' => array(
+        'iv_children' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_children_languages' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_children_genders' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_children_countries' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_project' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_partner' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_partner_titles' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_partner_countries' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_partner_salutations' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_donation_programs' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_gift' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_gift_categories' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_giftcard' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'iv_images_since' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+      ),
+    );
+  }
+
+  return $instances;
+}
+
+/**
+ * Implements hook_wovi_datasource_entity_info().
+ */
+function wovi_ivision_wovi_datasource_entity_info() {
+  $entities = array();
+
+  $entities['iv_children'] = array(
+    'label' => t('iVision Children'),
+    'description' => t('Represents the structure of ivision children data.'),
+    'primary_key' => 'iVisionID',
+    'fields' => array(
+      'iVisionID' => array(
+        'label' => t('iVision ID'),
+        'default value' => NULL,
+      ),
+      'name' => array(
+        'label' => t('Name'),
+        'default value' => NULL,
+      ),
+      'givenName' => array(
+        'label' => t('Given name'),
+        'default value' => NULL,
+      ),
+      'localChildGivenName' => array(
+        'label' => t('Local Given name'),
+        'default value' => NULL,
+      ),
+      'familyName' => array(
+        'label' => t('Family name'),
+        'default value' => NULL,
+      ),
+      'localChildFamilyName' => array(
+        'label' => t('Local Family name'),
+        'default value' => NULL,
+      ),
+      'birthDate' => array(
+        'label' => t('Birthday'),
+        'default value' => NULL,
+      ),
+      'isBirthDateVerified' => array(
+        'label' => t('Verified Birthday'),
+        'default value' => FALSE,
+      ),
+      'age' => array(
+        'label' => t('Age'),
+        'default value' => NULL,
+      ),
+      'childID' => array(
+        'label' => t('Child ID'),
+        'default value' => NULL,
+      ),
+      'projectID' => array(
+        'label' => t('Project ID'),
+        'default value' => NULL,
+      ),
+      'childSequence' => array(
+        'label' => t('Child Sequence'),
+        'default value' => NULL,
+      ),
+      'countryCode' => array(
+        'label' => t('Country Code'),
+        'default value' => NULL,
+      ),
+      'countryDescription' => array(
+        'label' => t('Country Description'),
+        'default value' => NULL,
+      ),
+      'genderDescription' => array(
+        'label' => t('Gender Description'),
+        'default value' => NULL,
+      ),
+      'schoolLevelDesc' => array(
+        'label' => t('School Level Description'),
+        'default value' => NULL,
+      ),
+      'gradeNumber' => array(
+        'label' => t('Grade Number Description'),
+        'default value' => NULL,
+      ),
+      'noSchoolReasonDesc' => array(
+        'label' => t('No School Reason Description'),
+        'default value' => NULL,
+      ),
+      'favouriteSubjectDesc' => array(
+        'label' => t('Favourite Subject'),
+        'default value' => NULL,
+      ),
+      'healthDesc' => array(
+        'label' => t('Healt Description'),
+        'default value' => NULL,
+      ),
+      'handicapDesc' => array(
+        'label' => t('Handicap Description'),
+        'default value' => NULL,
+      ),
+      'choreDesc' => array(
+        'label' => t('Chore Description'),
+        'default value' => NULL,
+      ),
+      'playDesc' => array(
+        'label' => t('Play Description'),
+        'default value' => NULL,
+      ),
+      'livesWithDesc' => array(
+        'label' => t('Lives with Description'),
+        'default value' => NULL,
+      ),
+      'motherStatusDesc' => array(
+        'label' => t('Mother Status Description'),
+        'default value' => NULL,
+      ),
+      'motherJobStatusDesc' => array(
+        'label' => t('Mother Job Status Description'),
+        'default value' => NULL,
+      ),
+      'fatherStatusDesc' => array(
+        'label' => t('Father Status Description'),
+        'default value' => NULL,
+      ),
+      'fatherJobStatusDesc' => array(
+        'label' => t('Father Job Description'),
+        'default value' => NULL,
+      ),
+      'brothers' => array(
+        'label' => t('Brothers'),
+        'default value' => 0,
+      ),
+      'sisters' => array(
+        'label' => t('Sisters'),
+        'default value' => 0,
+      ),
+      'peopleGroupDesc' => array(
+        'label' => t('People Group Description'),
+        'default value' => NULL,
+      ),
+      'statusID' => array(
+        'label' => t('Status ID'),
+        'default value' => NULL,
+      ),
+      'status' => array(
+        'label' => t('Status'),
+        'default value' => NULL,
+      ),
+      'isReserved' => array(
+        'label' => t('Reserved'),
+        'default value' => FALSE,
+      ),
+      'reservationID' => array(
+        'label' => t('Reservation ID'),
+        'default value' => NULL,
+      ),
+    ),
+    'joins' => array(
+      'image_regular' => array(
+        'label' => t('Regular Image'),
+        'parameters' => array(
+          'width' => 200,
+          'height' => 200,
+        )
+      ),
+      'image_apr' => array(
+        'label' => t('APR Image'),
+        'parameters' => array(
+          'contentType' => 'APR',
+          'mediaCode' => 'PIC',
+          'derivative' => 'WEB',
+          'status' => 0,
+        )
+      ),
+      'image_apr_uri' => array(
+        'label' => t('APR Image URI'),
+        'parameters' => array(
+          'contentType' => 'APR',
+          'mediaCode' => 'PIC',
+          'derivative' => 'WEB',
+          'status' => 0,
+        )
+      ),
+      'image_cup' => array(
+        'label' => t('CUP Image'),
+        'parameters' => array(
+          'contentType' => 'CUP',
+          'mediaCode' => 'PIC',
+          'derivative' => 'WEB',
+          'status' => 0,
+        )
+      ),
+      'image_cup_uri' => array(
+        'label' => t('CUP Image URI'),
+        'parameters' => array(
+          'contentType' => 'CUP',
+          'mediaCode' => 'PIC',
+          'derivative' => 'WEB',
+          'status' => 0,
+        )
+      ),
+      'video_cgv' => array(
+        'label' => t('CGV Video'),
+        'parameters' => array(
+          'contentType' => 'CGV',
+          'mediaCode' => 'VID',
+          'derivative' => 'iPad',
+          'status' => 0,
+        )
+      ),
+      'video_cgv_uri' => array(
+        'label' => t('CGV Video URI'),
+        'parameters' => array(
+          'contentType' => 'CGV',
+          'mediaCode' => 'VID',
+          'derivative' => 'iPad',
+          'status' => 0,
+        )
+      ),
+      'stepwise' => array(
+        'label' => t('Stepwise Data'),
+        'parameters' => array()
+      ),
+    ),
+  );
+  $entities['iv_children_languages'] = array(
+    'label' => t('iVision Children Languages'),
+    'description' => t('Represents the structure of ivision children language data.'),
+    'primary_key' => 'code',
+    'fields' => array(
+      'code' => array(
+        'label' => t('Language Code'),
+        'default value' => NULL,
+      ),
+    ),
+  );
+  $entities['iv_children_countries'] = array(
+    'label' => t('iVision Children Countries'),
+    'description' => t('Represents the structure of ivision children country data.'),
+    'primary_key' => 'code',
+    'fields' => array(
+      'code' => array(
+        'label' => t('Country Code'),
+        'default value' => NULL,
+      ),
+      'description' => array(
+        'label' => t('Description'),
+        'default value' => NULL,
+      ),
+      'languageCode' => array(
+        'label' => t('Language Code'),
+        'default value' => NULL,
+      ),
+    ),
+  );
+
+  $entities['iv_project'] = array(
+    'label' => t('iVision Project'),
+    'description' => t('Represents the structure of ivision project data.'),
+    'primary_key' => 'projectCode',
+    'fields' => array(
+      'projectCode' => array(
+        'label' => t('Project Code'),
+        'default value' => NULL,
+      ),
+      'totalOfChildren' => array(
+        'label' => t('Total Children'),
+        'default value' => NULL,
+      ),
+      'numberOfSponsored' => array(
+        'label' => t('Number of Sponsored'),
+        'default value' => NULL,
+      ),
+      'numberOfDropped' => array(
+        'label' => t('Number of Dropped'),
+        'default value' => NULL,
+      ),
+      'numberOfUnsponsored' => array(
+        'label' => t('Number of Unsponsored'),
+        'default value' => NULL,
+      ),
+      'startDate' => array(
+        'label' => t('Start Date'),
+        'default value' => NULL,
+      ),
+      'endDate' => array(
+        'label' => t('End Date'),
+        'default value' => NULL,
+      ),
+      'media' => array(
+        'label' => t('Media'),
+        'default value' => NULL,
+      ),
+    ),
+    'joins' => array(
+      'project_media' => array(
+        'label' => t('Project Media'),
+        'parameters' => array()
+      ),
+      'project_media_caption' => array(
+        'label' => t('Project Media with Caption'),
+        'parameters' => array(
+          'contentType' => 'OCP',
+          'mediaCode' => 'PIC',
+          'derivative' => 'WEB',
+          'status' => 0,
+        )
+      ),
+      'getProjectMediaURL' => array(
+        'label' => t('Project Media URI'),
+        'parameters' => array(
+          'contentType' => 'OCP',
+          'mediaCode' => 'PIC',
+          'derivative' => 'WEB',
+          'status' => 0,
+        )
+      ),
+    ),
+  );
+  $entities['iv_children_genders'] = array(
+    'label' => t('iVision Children Genders'),
+    'description' => t('Represents the structure of ivision children gender data.'),
+    'primary_key' => 'code',
+    'fields' => array(
+      'code' => array(
+        'label' => t('Gender Code'),
+        'default value' => NULL,
+      ),
+      'description' => array(
+        'label' => t('Description'),
+        'default value' => NULL,
+      ),
+      'languageCode' => array(
+        'label' => t('Language Code'),
+        'default value' => NULL,
+      ),
+    ),
+  );
+
+  $entities['iv_partner'] = array(
+    'label' => t('iVision Partner'),
+    'description' => t('Represents the structure of ivision partner data.'),
+    'primary_key' => 'partnerID',
+    'fields' => array(
+      'partnerID' => array(
+        'label' => t('Partner ID'),
+        'default value' => NULL,
+      ),
+      'portalAccountID' => array(
+        'label' => t('Portal Account ID'),
+        'default value' => NULL,
+      ),
+      'firstName' => array(
+        'label' => t('First Name'),
+        'default value' => NULL,
+      ),
+      'surname' => array(
+        'label' => t('Surname'),
+        'default value' => NULL,
+      ),
+      'initials' => array(
+        'label' => t('Initials'),
+        'default value' => NULL,
+      ),
+      'salutationCode' => array(
+        'label' => t('Salutation Code'),
+        'default value' => NULL,
+      ),
+      'languageCode' => array(
+        'label' => t('Language Code'),
+        'default value' => NULL,
+      ),
+      'jobTitle' => array(
+        'label' => t('Job Title'),
+        'default value' => NULL,
+      ),
+      'addressType' => array(
+        'label' => t('Address Type'),
+        'default value' => NULL,
+      ),
+      'street' => array(
+        'label' => t('Street'),
+        'default value' => NULL,
+      ),
+      'houseNo' => array(
+        'label' => t('House Number'),
+        'default value' => NULL,
+      ),
+      'address' => array(
+        'label' => t('Address Part 1'),
+        'default value' => NULL,
+      ),
+      'address2' => array(
+        'label' => t('Address Part 2'),
+        'default value' => NULL,
+      ),
+      'address3' => array(
+        'label' => t('Address Part 3'),
+        'default value' => NULL,
+      ),
+      'city' => array(
+        'label' => t('Street'),
+        'default value' => NULL,
+      ),
+      'county' => array(
+        'label' => t('Street'),
+        'default value' => NULL,
+      ),
+      'countryRegionCode' => array(
+        'label' => t('Country Code'),
+        'default value' => NULL,
+      ),
+      'postCode' => array(
+        'label' => t('Post Code'),
+        'default value' => NULL,
+      ),
+      'phoneNo' => array(
+        'label' => t('Phone Number'),
+        'default value' => NULL,
+      ),
+      'phoneNoPrivate' => array(
+        'label' => t('Phone Number (Private)'),
+        'default value' => NULL,
+      ),
+      'faxNoPrivate' => array(
+        'label' => t('Fax Number (Private)'),
+        'default value' => NULL,
+      ),
+      'extension' => array(
+        'label' => t('Extension'),
+        'default value' => NULL,
+      ),
+      'eMail' => array(
+        'label' => t('E-Mail'),
+        'default value' => NULL,
+      ),
+      'eMail2' => array(
+        'label' => t('E-Mail 2'),
+        'default value' => NULL,
+      ),
+      'companyNo' => array(
+        'label' => t('Company Number'),
+        'default value' => NULL,
+      ),
+      'companyName' => array(
+        'label' => t('Company Name'),
+        'default value' => NULL,
+      ),
+      'hasPendingOrder' => array(
+        'label' => t('Has Pending Order?'),
+        'default value' => FALSE,
+      ),
+      'hasPendingContactInfo' => array(
+        'label' => t('Has Pending Contact Info?'),
+        'default value' => FALSE,
+      ),
+      'hasPendingPaymentUpdate' => array(
+        'label' => t('Has Pending Payment Update?'),
+        'default value' => FALSE,
+      ),
+      'hasPendingLumSumPayment' => array(
+        'label' => t('Has Pending LumSum Payment?'),
+        'default value' => FALSE,
+      ),
+      'addressAddition' => array(
+        'label' => t('Address Addition'),
+        'default value' => NULL,
+      ),
+    ),
+    'joins' => array(
+      'payment_history' => array(
+        'label' => t('Payment History'),
+        'parameters' => array(
+          'cutoff' => 'YYYYMMDD',
+        )
+      ),
+      'ongoing_givings' => array(
+        'label' => t('Ongoing Givings'),
+        'parameters' => array()
+      ),
+      'my_sponsored_children' => array(
+        'label' => t('My Sponsored Children'),
+        'parameters' => array()
+      ),
+      'payment_methods' => array(
+        'label' => t('Payment Methods'),
+        'parameters' => array()
+      ),
+      'payment_accounts' => array(
+        'label' => t('Payment Accounts'),
+        'parameters' => array()
+      ),
+    ),
+  );
+  $entities['iv_children_genders'] = array(
+    'label' => t('iVision Children Genders'),
+    'description' => t('Represents the structure of ivision children gender data.'),
+    'primary_key' => 'code',
+    'fields' => array(
+      'code' => array(
+        'label' => t('Gender Code'),
+        'default value' => NULL,
+      ),
+      'description' => array(
+        'label' => t('Description'),
+        'default value' => NULL,
+      ),
+      'languageCode' => array(
+        'label' => t('Language Code'),
+        'default value' => NULL,
+      ),
+    ),
+  );
+  $entities['iv_partner_list'] = array(
+    'label' => t('iVision Partner List'),
+    'description' => t('Represents the structure of ivision partner base info list data.'),
+    'primary_key' => 'partnerID',
+    'fields' => array(
+      'partnerID' => array(
+        'label' => t('Partner ID'),
+        'default value' => NULL,
+      ),
+      'email' => array(
+        'label' => t('E-Mail'),
+        'default value' => NULL,
+      ),
+      'email2' => array(
+        'label' => t('E-Mail 2'),
+        'default value' => NULL,
+      ),
+      'typeID' => array(
+        'label' => t('Type ID'),
+        'default value' => NULL,
+      ),
+      'date' => array(
+        'label' => t('Register Date'),
+        'default value' => NULL,
+      ),
+      'isNew' => array(
+        'label' => t('isNew'),
+        'default value' => FALSE,
+      ),
+    ),
+  );
+  $entities['iv_partner_titles'] = array(
+    'label' => t('iVision Partner Titles'),
+    'description' => t('Represents the structure of ivision partner title data.'),
+    'primary_key' => 'code',
+    'fields' => array(
+      'code' => array(
+        'label' => t('Title Code'),
+        'default value' => NULL,
+      ),
+      'description' => array(
+        'label' => t('Description'),
+        'default value' => NULL,
+      ),
+    ),
+  );
+  $entities['iv_partner_countries'] = array(
+    'label' => t('iVision Partner Countries'),
+    'description' => t('Represents the structure of ivision partner country data.'),
+    'primary_key' => 'code',
+    'fields' => array(
+      'code' => array(
+        'label' => t('Language Code'),
+        'default value' => NULL,
+      ),
+      'description' => array(
+        'label' => t('Description'),
+        'default value' => NULL,
+      ),
+    ),
+  );
+  $entities['iv_partner_salutations'] = array(
+    'label' => t('iVision Partner Salutations'),
+    'description' => t('Represents the structure of ivision partner salutation data.'),
+    'primary_key' => 'code',
+    'fields' => array(
+      'code' => array(
+        'label' => t('Salutation Code'),
+        'default value' => NULL,
+      ),
+      'description' => array(
+        'label' => t('Description'),
+        'default value' => NULL,
+      ),
+    ),
+  );
+
+  $entities['iv_donation_programs'] = array(
+    'label' => t('iVision Donation Programs'),
+    'description' => t('Represents the structure of ivision donation programm data.'),
+    'primary_key' => 'iVisionID',
+    'fields' => array(
+      'iVisionID' => array(
+        'label' => t('iVision ID'),
+        'default value' => NULL,
+      ),
+      'name' => array(
+        'label' => t('Name'),
+        'default value' => NULL,
+      ),
+      'shortDescription' => array(
+        'label' => t('Description'),
+        'default value' => NULL,
+      ),
+      'isEmergencyAid' => array(
+        'label' => t('Is Emergency Aid?'),
+        'default value' => FALSE,
+      ),
+      'isFeaturedDonation' => array(
+        'label' => t('Is Featured Donation?'),
+        'default value' => FALSE,
+      ),
+      'isRecurring' => array(
+        'label' => t('Is Recurring?'),
+        'default value' => FALSE,
+      ),
+      'donationPrices' => array(
+        'label' => t('Donation Prices'),
+        'default value' => array(),
+      ),
+    ),
+  );
+
+  $entities['iv_donation'] = array(
+    'label' => t('iVision Donation'),
+    'description' => t('Represents the structure of ivision donation.'),
+    'primary_key' => 'iVisionID',
+    'fields' => array(
+      'iVisionID' => array(
+        'label' => t('iVision ID'),
+        'default value' => NULL,
+      ),
+    ),
+    'joins' => array(
+      'image_regular' => array(
+        'label' => t('Regular Image'),
+        'parameters' => array(
+          'width' => 200,
+          'height' => 200,
+        )
+      ),
+    ),
+  );
+
+  $entities['iv_gift'] = array(
+    'label' => t('iVision Gift'),
+    'description' => t('Represents the structure of ivision gift data.'),
+    'primary_key' => 'iVisionID',
+    'fields' => array(
+      'iVisionID' => array(
+        'label' => t('iVision ID'),
+        'default value' => NULL,
+      ),
+      'name' => array(
+        'label' => t('Name'),
+        'default value' => NULL,
+      ),
+      'giftCategory' => array(
+        'label' => t('Gift Category'),
+        'default value' => NULL,
+      ),
+      'shortDescription' => array(
+        'label' => t('Short Description'),
+        'default value' => NULL,
+      ),
+      'longDescription' => array(
+        'label' => t('Long Description'),
+        'default value' => NULL,
+      ),
+      'isShareable' => array(
+        'label' => t('Is Shareable'),
+        'default value' => FALSE,
+      ),
+      'sharePrice' => array(
+        'label' => t('Share Price'),
+        'default value' => NULL,
+      ),
+      'unitPrice' => array(
+        'label' => t('Unit Price'),
+        'default value' => NULL,
+      ),
+      'inventoryQuantity' => array(
+        'label' => t('Inventory Quantity'),
+        'default value' => NULL,
+      ),
+      'isDefaultGift' => array(
+        'label' => t('Is Default Gift?'),
+        'default value' => TRUE,
+      ),
+      'isSpecialGift' => array(
+        'label' => t('Is Special Gift?'),
+        'default value' => FALSE,
+      ),
+    ),
+    'joins' => array(
+      'image_regular' => array(
+        'label' => t('Regular Image'),
+        'parameters' => array(
+          'width' => 200,
+          'height' => 200,
+        )
+      ),
+    ),
+  );
+  $entities['iv_children_genders'] = array(
+    'label' => t('iVision Children Genders'),
+    'description' => t('Represents the structure of ivision children gender data.'),
+    'primary_key' => 'code',
+    'fields' => array(
+      'code' => array(
+        'label' => t('Gender Code'),
+        'default value' => NULL,
+      ),
+      'description' => array(
+        'label' => t('Description'),
+        'default value' => NULL,
+      ),
+      'languageCode' => array(
+        'label' => t('Language Code'),
+        'default value' => NULL,
+      ),
+    ),
+  );
+  $entities['iv_gift_categories'] = array(
+    'label' => t('iVision Gift Categories'),
+    'description' => t('Represents the structure of ivision gift category data.'),
+    'primary_key' => 'name',
+    'fields' => array(
+      'name' => array(
+        'label' => t('Name'),
+        'default value' => NULL,
+      ),
+    ),
+  );
+
+  $entities['iv_giftcard'] = array(
+    'label' => t('iVision Giftcard'),
+    'description' => t('Represents the structure of ivision giftcard data.'),
+    'primary_key' => 'GiftCardID',
+    'fields' => array(
+      'GiftCardID' => array(
+        'label' => t('Giftcard ID'),
+        'default value' => NULL,
+      ),
+      'GiftCardCategoryID' => array(
+        'label' => t('Category ID'),
+        'default value' => NULL,
+      ),
+      'GiftCardCategoryName' => array(
+        'label' => t('Name'),
+        'default value' => NULL,
+      ),
+      'Description' => array(
+        'label' => t('Description'),
+        'default value' => NULL,
+      ),
+      'GiftCatalogueID' => array(
+        'label' => t('Catalogue ID'),
+        'default value' => NULL,
+      ),
+    ),
+    'joins' => array(
+      'image_giftcard' => array(
+        'label' => t('Regular Image'),
+        'parameters' => array(
+          'width' => 200,
+          'height' => 200,
+        )
+      ),
+    ),
+  );
+  $entities['iv_children_genders'] = array(
+    'label' => t('iVision Children Genders'),
+    'description' => t('Represents the structure of ivision children gender data.'),
+    'primary_key' => 'code',
+    'fields' => array(
+      'code' => array(
+        'label' => t('Gender Code'),
+        'default value' => NULL,
+      ),
+      'description' => array(
+        'label' => t('Description'),
+        'default value' => NULL,
+      ),
+      'languageCode' => array(
+        'label' => t('Language Code'),
+        'default value' => NULL,
+      ),
+    ),
+  );
+  $entities['iv_images_since'] = array(
+    'label' => t('iVision Images since'),
+    'description' => t('Represents the IVision Images for period of time'),
+    'primary_key' => 'iVisionID',
+    'fields' => array(
+      'iVisionID' => array(
+        'label' => t('iVisionID'),
+        'default value' => NULL,
+      ),
+      'image' => array(
+        'label' => t('Image'),
+        'default value' => NULL,
+      ),
+      'type' => array(
+        'label' => t('Type'),
+        'default value' => NULL,
+      ),
+      'maxReturn' => array(
+        'label' => t('Max Return'),
+        'default value' => NULL,
+      ),
+      'startingID' => array(
+        'label' => t('statingID'),
+        'default value' => NULL,
+      ),
+      'width' => array(
+        'label' => t('Width'),
+        'default value' => NULL,
+      ),
+      'height' => array(
+        'label' => t('Height'),
+        'default value' => NULL,
+      ),
+      'date' => array(
+        'label' => t('Date'),
+        'default value' => NULL,
+      ),
+    ),
+  );
+
+  return $entities;
+}
+
+/**
+ * Implements hook_wovi_datasource_execute_select().
+ *
+ * Executes the iVision API call with the query parameters.
+ *
+ * @param $query
+ *  The query information array containing the following information:
+ *  - $select: The entity name.
+ *  - $fields: An array of entity field names that should get returned.
+ *  - $conditions: An array of field condition arrays:
+ *    - Each array contains the following information:
+ *      - $field_name: The Field name.
+ *      - $value: The value for this condition:
+ *      - $operator: The operator for the condition. (Default NULL)
+ * @param $machine_name
+ *  The machine name of the datasource instance.
+ * @return array
+ *  An array of entity results keyed by the primary key of the entity.
+ */
+function wovi_ivision_wovi_datasource_execute_select($query, $machine_name) {
+  $response = array();
+
+  // Initialize ivision controller.
+  $ivision_settings = variable_get('wovi_ivision_settings', array());
+  $instance_name = preg_replace('/^ivision\_/', '', $machine_name, 1);
+
+  if (isset($ivision_settings[$instance_name])) {
+    module_load_include('php', 'wovi_ivision', 'IVisionController');
+
+    $ivision = new IVisionController(array(
+      'uri' => $ivision_settings[$instance_name]['uri'] . '/',
+      'language' => $ivision_settings[$instance_name]['language'],
+      'siteID' => $ivision_settings[$instance_name]['site_id']
+    ), $ivision_settings[$instance_name]['dummy_data']);
+
+  }
+
+  // Analyse the Query and Returns the iVision Data as Array.
+  try {
+    module_load_include('class.php', 'wovi_ivision', 'RenderQueryBuilder');
+    $render_query_builder = new RenderQueryBuilder($ivision);
+    $response = $render_query_builder->getQueryResult($query);
+  } catch (Exception $e) {
+    dpm($e->getMessage());
+    $response['results'] = array();
+    $response['error'] = $e->getMessage();
+  }
+
+  if ($response['error'] === FALSE) {
+    // Limit by conditions.
+    if ($query['conditions']) {
+      $filtered = array();
+
+      $datasource_entity_info = wovi_datasource_entity_get_info();
+      $primary_key = $datasource_entity_info[$query['type']]['primary_key'];
+      // Execute all conditions.
+      // @todo find an solution to group conditions logical to AND and OR conditions. @see db_and(), db_or().
+      foreach ($query['conditions'] as $condition) {
+        foreach (new iVisionResultFilter(new ArrayIterator($response['results']), $condition) as $result) {
+          $filtered[$result[$primary_key]] = $result;
+        }
+      }
+
+      $response['results'] = $filtered;
+    }
+
+    // Order by.
+    if ($query['order']) {
+      usort($response['results'], IVisionResultOrder::settings(
+        $query['order']['field'],
+        $query['order']['direction']
+      ));
+    }
+
+    // Range
+    if ($query['range']) {
+      // Slice array by given range.
+      $response['results'] = array_slice($response['results'], $query['range']['from'], $query['range']['to'], TRUE);
+    }
+
+    // Limit fields.
+    if ($query['fields']) {
+      $fields = drupal_map_assoc($query['fields']);
+      foreach ($response['results'] as &$result) {
+        $result = array_intersect_key($result, $fields);
+        //$result += array_fill_keys($query['fields'], NULL);
+
+      }
+    }
+  }
+
+  return $response;
+}
+
+/**
+ * Helper function: Checks if an ivision instance name already exists.
+ *
+ * @param $name
+ *  The name to check against.
+ * @return bool
+ */
+function wovi_ivision_instance_exists($name) {
+  $instances = variable_get('wovi_ivision_settings', array());
+  return isset($instances[$name]);
+}
+
+/**
+ * Helper function: Builds the api uri.
+ *
+ * @param $settings
+ *  An array of api instance settings
+ *   - url: The url without schema prefix.
+ *   - site_id: The unique api site_id.
+ *   - language: The api language.
+ * @return string
+ *  The api uri as string.
+ */
+function wovi_ivision_build_uri($settings) {
+  return 'https://' . $settings['uri'] . '/' .
+  $settings['site_id'] . '/' .
+  $settings['language'];
+}
+
+/**
+ * Class IVisionResultOrder
+ *
+ * Helper Class: Because usort() can't handle additional arguments we build this
+ * little wrapper class that stores the our arguments $field and $direction and
+ * access them in the comparison callback that is passed to usort().
+ *
+ * @usage
+ * usort($array, IVisionResultOrder::settings('field_name', 'DESC'));
+ *
+ * @see usort()
+ */
+class IVisionResultOrder {
+  static private $order = array();
+
+  static public function settings($field, $direction = SORT_ASC, $sort = SORT_NATURAL) {
+    self::$order['field'] = $field;
+    self::$order['direction'] = ($direction == SORT_ASC) ? 1 : -1;
+    self::$order['allg'] = $sort;
+
+    return array('IVisionResultOrder', 'process');
+  }
+
+  /**
+   * The value_compare_func for usort()
+   *
+   * @param $a
+   *  First item to compare.
+   * @param $b
+   *  Second item to compare.
+   * @return int
+   *  < 0 if $a is less than $b
+   *  > 0 if $a is greater than $b
+   *  0 if they are equal.
+   *
+   * @see strnatcmp()
+   */
+  static public function process($a, $b) {
+
+    switch (self::$order['allg']) {
+      case SORT_NUMERIC:
+        $method = 'self::intcmp';
+        break;
+      case SORT_STRING:
+        $method = 'strcmp';
+        break;
+      default:
+      case SORT_NATURAL:
+        $method = 'strnatcmp';
+        break;
+    }
+
+
+    return self::$order['direction'] * $method(
+      $a[self::$order['field']],
+      $b[self::$order['field']]
+    );
+  }
+
+  /**
+   * Compare callback for numeric values.
+   *
+   * @param $a
+   *  First item to compare.
+   * @param $b
+   *  Second item to compare.
+   * @return int
+   *  < 0 if $a is less than $b
+   *  > 0 if $a is greater than $b
+   *  0 if they are equal.
+   */
+  static private function intcmp($a, $b) {
+    return $a - $b;
+  }
+}
+
+/**
+ * Class iVisionResultFilter
+ *
+ * Helper Class: Because it isn't possible to every query condition through the
+ * ivision webservice api we need some helpers for post processing. This is done
+ * by an ArrayIterator and FilterIterator.
+ *
+ * @todo implement some error handling.
+ *
+ * @see FilterIterator
+ */
+class iVisionResultFilter extends FilterIterator {
+  // The condition array to check against.
+  static $operators = array(
+    '=' => 'eq',
+    '!=' => 'neq',
+    '>' => 'gt',
+    '<' => 'lt',
+    '>=' => 'gte',
+    '<=' => 'lte',
+    'in' => 'in',
+    'not in' => 'notin',
+    'like' => 'like',
+    'not like' => 'notlike',
+  );
+
+  // The operator callback mapping.
+  private $condition;
+
+  /**
+   * Constructor: Calls the parent constructor an stores the condition array.
+   *
+   * @param Iterator $iterator
+   *  The Iterator Object to use for this Filter.
+   * @param $condition
+   *  An condition array with the following values:
+   *  - $field: The field name this condition should verify.
+   *  - $value: The value this condition should match against.
+   *  - $operator: The operator this condition should use. (Default: NULL)
+   *
+   * @see Iterator
+   * @see FilterIterator::__construct()
+   */
+  public function __construct(Iterator $iterator, $condition) {
+    parent::__construct($iterator);
+    $this->condition = $condition;
+  }
+
+  /**
+   * Not Equal comparison callback.
+   *
+   * Returns the negated result of iVisionResultFilter::eq().
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   *
+   * @see iVisionResultFilter::eq()
+   */
+  static function neq($field, $condition) {
+    return !self::eq($field, $condition);
+  }
+
+  /**
+   * Equal comparison callback.
+   *
+   * If the $condition value is an array we will use iVisionResultFilter::in()
+   * for comparison to detect if the $field value matches to any of the $condition values.
+   * Otherwise we perform a simple equal comparison.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   *
+   * @see iVisionResultFilter::in()
+   */
+  static function eq($field, $condition) {
+    if (is_array($condition)) {
+      return self::in($field, $condition);
+    }
+
+    return ($field == $condition);
+  }
+
+  /**
+   * In comparison callback.
+   *
+   * Checks if an $field value matches any $condition values.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function in($field, $condition) {
+    if (!is_array($condition)) {
+      $condition = array($condition);
+    }
+    return in_array($field, $condition);
+  }
+
+  /**
+   * Greater Than comparison callback.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function gt($field, $condition) {
+    return ($field > $condition);
+  }
+
+  /**
+   * Less Than comparison callback.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function lt($field, $condition) {
+    return ($field < $condition);
+  }
+
+  /**
+   * Greater Than or Equal comparison callback.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function gte($field, $condition) {
+    return ($field >= $condition);
+  }
+
+  /**
+   * Less Than or Equal comparison callback.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function lte($field, $condition) {
+    return ($field <= $condition);
+  }
+
+  /**
+   * Not In comparison callback.
+   *
+   * Returns the negated result of iVisionResultFilter::in().
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   *
+   * @see iVisionResultFilter::in()
+   */
+  static function notin($field, $condition) {
+    return !self::in($field, $condition);
+  }
+
+  /**
+   * Not like comparison callback.
+   *
+   * Returns the negated result of iVisionResultFilter::like().
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   *
+   * @see iVisionResultFilter::like()
+   */
+  static function notlike($field, $condition) {
+    return !self::like($field, $condition);
+  }
+
+  /**
+   * like matching callback.
+   *
+   * Generates from the query string an regex an matches against the field value.
+   *
+   * Query to regex examples:
+   * - '%string%'   => '/string/'
+   * - '%string'    => '/string$/'
+   * - 'string%'    => '/^string/'
+   * - '%str%ing%'  => '/str(.+)ing/'
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function like($field, $condition) {
+    $condition = preg_replace(array(
+      '/^\%(.+)/',
+      '/(.+)\%$/',
+      '/\%/'
+    ), array(
+      '$1\$',
+      '^$1',
+      '(.+)'
+    ), $condition);
+
+    return (bool) preg_match("/$condition/", $field);
+  }
+
+  /**
+   * Implements FilterIterator::accept()
+   *
+   * @return boolean
+   *  Returns if the result matches the condition.
+   */
+  public function accept() {
+    $result = $this->getInnerIterator()->current();
+
+    if ($this->condition['operator'] === NULL) {
+      $this->condition['operator'] = 'in';
+    }
+
+    $method = self::$operators[$this->condition['operator']];
+
+    return self::$method (
+      $result[$this->condition['field']],
+      $this->condition['value']
+    );
+  }
+}

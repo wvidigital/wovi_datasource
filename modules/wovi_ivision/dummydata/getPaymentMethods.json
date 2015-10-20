@@ -1,0 +1,31 @@
+[
+  {
+    "collectionDate": "1753-01-01T00:00:00",
+    "paidOnline": 0,
+    "externalReferenceNumber": "",
+    "paymentMethod": "Bank",
+    "frequency": 0,
+    "bankName": null,
+    "custBankAccSSN": null,
+    "bankAccountHolder": "",
+    "bankBranchNo": "",
+    "bankCode": "",
+    "bankAccNo": "554005-232802",
+    "ABI": "",
+    "BBAN": "",
+    "CAB": "",
+    "transitNo": "",
+    "bankIDNo": "",
+    "oeNBRegistrationNo": "",
+    "SWIFT": "",
+    "IBAN": "",
+    "creditCardType": "",
+    "creditCardNo": 0,
+    "crCardSecNo": 0,
+    "crCardHolder": "",
+    "crCardExMonth": 1,
+    "crCardExYear": 1753,
+    "pledgeID": 0,
+    "amount": 0.0
+  }
+]

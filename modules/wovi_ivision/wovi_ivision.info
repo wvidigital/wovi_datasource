@@ -1,0 +1,7 @@
+name = Worldvision iVision
+description = Provides access to iVision data.
+version = 7.x-1.0
+core = 7.x
+package = World Vision - Global
+
+dependencies[] = wovi_datasource

@@ -1,0 +1,16 @@
+[
+  {
+    "GiftCardID": 1,
+    "GiftCardCategoryID": "C02",
+    "GiftCardCategoyName": "Summer Gift",
+    "Description": "",
+    "GiftCatalogueID": 315
+  },
+  {
+    "GiftCardID": 2,
+    "GiftCardCategoryID": "C03",
+    "GiftCardCategoyName": "Child",
+    "Description": "",
+    "GiftCatalogueID": 315
+  }
+]

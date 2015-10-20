@@ -1,0 +1,107 @@
+{
+  "webReferenceID": "1",
+  "partnerID": "",
+  "portalAccountID": "00000000-0000-0000-0000-000000000000",
+  "firstName": "Stanley",
+  "middleName": "",
+  "surname": "Chen",
+  "salutationCode": "",
+  "jobTitleCode": "",
+  "compName": "",
+  "compName2": "",
+  "street": "",
+  "houseNo": "",
+  "address2": "",
+  "address3": "",
+  "department": "",
+  "postCode": "",
+  "city": "",
+  "countryCode": "",
+  "POBox": "",
+  "POBoxPostCode": null,
+  "region": "",
+  "regionID": 0,
+  "territoryCode": "",
+  "POBoxCountryCode": "",
+  "preferredPhoneNo": 0,
+  "phonePrivate": "",
+  "phoneBusiness": "",
+  "mobilePhoneNo": "",
+  "faxNo": "",
+  "preferredEmail": 0,
+  "emailPrivate": "",
+  "emailBusiness": "",
+  "languageCode": "",
+  "prevDonated": 0,
+  "motivationText": null,
+  "partnerSSN": null,
+  "externalReferenceNumber": null,
+  "comments": "",
+  "additionalMembers": [
+    {
+      "name": "Lynn Chen",
+      "address": "A",
+      "address2": null,
+      "postCode": null,
+      "city": null,
+      "regionID": 0,
+      "countryCode": null,
+      "email": null,
+      "birthdate": null,
+      "salutationCode": null,
+      "salutationDescription": null,
+      "phoneNumber": null
+    }
+  ],
+  "commPreferences": [
+    {
+      "category": "TV",
+      "option": "1",
+      "choice": 0
+    }
+  ],
+  "payments": [
+    {
+      "collectionDate": "1753-01-01T00:00:00",
+      "paidOnline": 0,
+      "externalReferenceNumber": "",
+      "paymentMethod": "",
+      "frequency": 0,
+      "bankName": null,
+      "custBankAccSSN": "1245",
+      "bankAccountHolder": "",
+      "bankBranchNo": "",
+      "bankCode": "",
+      "bankAccNo": "",
+      "ABI": null,
+      "BBAN": null,
+      "CAB": null,
+      "transitNo": null,
+      "bankIDNo": null,
+      "oeNBRegistrationNo": null,
+      "SWIFT": "",
+      "IBAN": "",
+      "creditCardType": null,
+      "creditCardNo": 0,
+      "crCardSecNo": 0,
+      "crCardHolder": "",
+      "crCardExMonth": 0,
+      "crCardExYear": 0,
+      "pledgeID": 0,
+      "amount": 0
+    }
+  ],
+  "lumpSums": [
+    {
+      "onlineMotivationText": "Google",
+      "amount": 111,
+      "paidOnline": 0
+    }
+  ],
+  "partnerProfiles": [
+    {
+      "questionCode": "Category",
+      "lineNo": 50001
+    }
+  ]
+}
