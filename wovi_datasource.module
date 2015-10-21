@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * wovi_datasource.module.
+ */
 
 define('WOVI_DATASOURCE_CACHE_MISS', 0x0);
 define('WOVI_DATASOURCE_CACHE_HIT', 0x1);
@@ -70,7 +74,8 @@ function wovi_datasource_theme($existing, $type, $theme, $path) {
  * Implements hook_flush_caches().
  */
 function wovi_datasource_flush_caches() {
-  // @todo maybe there is a nicer way to clear datasource_entity_cache in addition.
+  // @TODO maybe there is a nicer way to clear datasource_entity_cache in
+  // addition.
   db_truncate('wovi_datasource_entity_cache')->execute();
   return array('wovi_datasource_cache');
 }
@@ -88,10 +93,12 @@ function wovi_datasource_admin_menu_cache_info() {
 }
 
 /**
- * Helper function: Clears the query cache for settings form or admin menu
+ * Helper function: Clears the query cache for settings form or admin menu.
  *
  * @param null $cid
+ *   $cid
  * @param bool $wildcard
+ *   $wildcard
  */
 function _wovi_datasource_cache_clear($cid = NULL, $wildcard = FALSE) {
   cache_clear_all($cid, 'wovi_datasource_cache', $wildcard);
@@ -101,9 +108,9 @@ function _wovi_datasource_cache_clear($cid = NULL, $wildcard = FALSE) {
 /**
  * Get datasource information.
  *
- * @param $type
- *   The datasource type, e.g. ivision, for which the info shall be returned, or NULL
- *   to return an array with info about all types.
+ * @param string $type
+ *   The datasource type, e.g. ivision, for which the info shall be returned,
+ *   or NULL to return an array with info about all types.
  *
  * @see hook_wovi_datasource_info()
  * @see hook_wovi_datasource_alter()
@@ -159,7 +166,7 @@ function wovi_datasource_get_info($type = NULL) {
 /**
  * Get datasource entity information.
  *
- * @param $type
+ * @param string $type
  *   The datasource entity type, e.g. iv_child, for which the info shall be
  *   returned, or NULL to return an array with info about all types.
  *
@@ -198,7 +205,7 @@ function wovi_datasource_entity_get_info($type = NULL) {
             'joins' => array(),
           );
 
-          // Merge in default values for fields
+          // Merge in default values for fields.
           foreach ($info[$entity_name]['fields'] as $field_name => $field_info) {
             $field_info += array(
               'label' => $field_name,
@@ -207,7 +214,7 @@ function wovi_datasource_entity_get_info($type = NULL) {
             $info[$entity_name]['fields'][$field_name] = $field_info;
           }
 
-          // Merge in default values for joins
+          // Merge in default values for joins.
           foreach ($info[$entity_name]['joins'] as $join_name => $join_info) {
             $join_info += array(
               'label' => $join_name,
@@ -238,10 +245,11 @@ function wovi_datasource_entity_get_info($type = NULL) {
 /**
  * Creates a new QueryBuilder Object for select queries and sets the $type.
  *
- * @param $type
- *  The type of data to receive in this query.
+ * @param string $type
+ *   The type of data to receive in this query.
+ *
  * @return QueryBuilder
- *  A QueryBuilder Object for select queries.
+ *   A QueryBuilder Object for select queries.
  *
  * @throws QueryBuilderException
  *
@@ -257,10 +265,11 @@ function wovi_datasource_select($type) {
 /**
  * Creates a new QueryBuilder Object for update queries and sets the $type.
  *
- * @param $type
- *  The type of data to update in this query.
+ * @param string $type
+ *   The type of data to update in this query.
+ *
  * @return QueryBuilder
- *  A QueryBuilder Object for update queries.
+ *   A QueryBuilder Object for update queries.
  *
  * @throws QueryBuilderException
  *
@@ -273,12 +282,11 @@ function wovi_datasource_update($type) {
   return $loader->update($type);
 }
 
-
 /**
  * Executes a query to all or one datasource module.
  *
- * @param $query
- *  The query information array containing the following information:
+ * @param string $query
+ *   The query information array containing the following information:
  *  - $operator: The query operation (Could be 'select', 'update' or 'insert').
  *  - $type: The entity name.
  *  - $join: Additional entity types to join.
@@ -290,16 +298,19 @@ function wovi_datasource_update($type) {
  *      - $operator: The operator for the condition. (Default NULL)
  *  - $order: An array with settings to order the results.
  *    - $field: The field to order the results.
- *    - $direction: 'ASC' for ascending 'DESC' for descending ordering. (Default 'ASC')
+ *    - $direction: 'ASC' for ascending 'DESC' for descending ordering.
+ *      (Default 'ASC')
  *  - $range: An array to slice the results.
  *    - $from: The start value.
  *    - $amount: The maximal amount of results you want to receive.
- * @param $configuration
- *  An array with additional configuration for the execution handler:
- *    - $datasource: If only a specific datasource should be executed. (Default NULL)
+ * @param array $configuration
+ *   An array with additional configuration for the execution handler:
+ *  - $datasource: If only a specific datasource should be executed.
+ *    (Default NULL)
+ *
  * @return array
- *  An associative array with datasource names as key and datasource
- *  information as value.
+ *   An associative array with datasource names as key and datasource
+ *   information as value.
  *
  * @see hook_wovi_datasource_execute()
  * @see hook_wovi_datasource_result_alter()
@@ -317,9 +328,11 @@ function wovi_datasource_execute($query, $configuration) {
     case 'select';
       $response = wovi_datasource_execute_select($query, $configuration);
       break;
+
     case 'update';
       $response = wovi_datasource_execute_update($query, $configuration);
       break;
+
     case 'insert';
       $response = wovi_datasource_execute_insert($query, $configuration);
       break;
@@ -328,15 +341,13 @@ function wovi_datasource_execute($query, $configuration) {
   module_invoke_all('wovi_datasource_post_execute', $query, $configuration['datasource'], $response);
 
   return $response;
-
-
 }
 
 /**
  * Executes a select query to all or one datasource module.
  *
- * @param $query
- *  The query information array containing the following information:
+ * @param string $query
+ *   The query information array containing the following information:
  *  - $operator: The query operation (In this case 'select').
  *  - $type: The entity name.
  *  - $join: Additional entity types to join.
@@ -348,15 +359,18 @@ function wovi_datasource_execute($query, $configuration) {
  *      - $operator: The operator for the condition. (Default NULL)
  *  - $order: An array with settings to order the results.
  *    - $field: The field to order the results.
- *    - $direction: 'ASC' for ascending 'DESC' for descending ordering. (Default 'ASC')
+ *    - $direction: 'ASC' for ascending 'DESC' for descending ordering.
+ *      (Default 'ASC')
  *  - $range: An array to slice the results.
  *    - $from: The start value.
  *    - $amount: The maximal amount of results you want to receive.
- * @param $configuration
- *  An array with additional configuration for the execution handler:
- *    - $datasource: If only a specific datasource should be executed. (Default NULL)
+ * @param array $configuration
+ *   An array with additional configuration for the execution handler:
+ *    - $datasource: If only a specific datasource should be executed.
+ *      (Default NULL)
+ *
  * @return array
- *  An array with datasource results keyed by the primary key.
+ *   An array with datasource results keyed by the primary key.
  */
 function wovi_datasource_execute_select($query, $configuration) {
   static $drupal_static_fast;
@@ -365,11 +379,12 @@ function wovi_datasource_execute_select($query, $configuration) {
     $drupal_static_fast = &drupal_static(__FUNCTION__, array());
   }
 
-//  @todo moved to QueryBuilder class.
-//  if (!isset($configuration['cache'])) {
-//    // Get default cache settings.
-//    $configuration['cache'] = variable_get('wovi_datasource_cache_default', TRUE);
-//  }
+  /*  @TODO moved to QueryBuilder class.
+  if (!isset($configuration['cache'])) {
+  // Get default cache settings.
+  $configuration['cache'] = variable_get('wovi_datasource_cache_default', TRUE);
+  }
+  */
 
   // Generate cache id.
   $cid = md5(($configuration['datasource'] ? $configuration['datasource'] : '') . serialize($query));
@@ -388,7 +403,6 @@ function wovi_datasource_execute_select($query, $configuration) {
       // If both caches miss fetch results from datasources.
       $results = array();
       $extra = array();
-
 
       foreach (wovi_datasource_get_info($configuration['datasource']) as $machine_name => $info) {
         // Check if the this module implements the requested entity.
@@ -412,8 +426,8 @@ function wovi_datasource_execute_select($query, $configuration) {
             // Append additional datasource information.
             unset($datasource_result['results']);
             $extra[$machine_name] = $datasource_result;
-
           }
+
           else {
             // Append datasource result to results.
             $results[$machine_name] = array();
@@ -473,8 +487,8 @@ function wovi_datasource_execute_select($query, $configuration) {
 /**
  * Executes a update query to all or one datasource module.
  *
- * @param $query
- *  The query information array containing the following information:
+ * @param string $query
+ *   The query information array containing the following information:
  *  - $operator: The query operation (In this case 'update').
  *  - $type: The entity name.
  *  - $join: Additional entity types to join.
@@ -486,23 +500,29 @@ function wovi_datasource_execute_select($query, $configuration) {
  *      - $operator: The operator for the condition. (Default NULL)
  *  - $order: An array with settings to order the results.
  *    - $field: The field to order the results.
- *    - $direction: 'ASC' for ascending 'DESC' for descending ordering. (Default 'ASC')
+ *    - $direction: 'ASC' for ascending 'DESC' for descending ordering.
+ *      (Default 'ASC')
  *  - $range: An array to slice the results.
  *    - $from: The start value.
  *    - $amount: The maximal amount of results you want to receive.
- * @param $configuration
- *  An array with additional configuration for the execution handler:
- *    - $datasource: If only a specific datasource should be executed. (Default NULL)
+ * @param array $configuration
+ *   An array with additional configuration for the execution handler:
+ *    - $datasource: If only a specific datasource should be executed.
+ *      (Default NULL)
  *    - $cache: If FALSE no cache will be used. (Default TRUE)
+ *
  * @return array
- *  An array with datasource results keyed by the primary key.
+ *   An array with datasource results keyed by the primary key.
  */
 function wovi_datasource_execute_update($query, $configuration) {
   $results = array();
 
+  /*
+  The use of function dpm() is discouraged.
   dpm($query);
-  // Remove cached queries matching the quried entities.
-  //wovi_datasource_query_cache_delete();
+  Remove cached queries matching the quried entities.
+  wovi_datasource_query_cache_delete();
+  */
 
   return $results;
 }
@@ -510,8 +530,8 @@ function wovi_datasource_execute_update($query, $configuration) {
 /**
  * Executes a insert query to all or one datasource module.
  *
- * @param $query
- *  The query information array containing the following information:
+ * @param string $query
+ *   The query information array containing the following information:
  *  - $operator: The query operation (In this case 'insert').
  *  - $type: The entity name.
  *  - $join: Additional entity types to join.
@@ -523,16 +543,19 @@ function wovi_datasource_execute_update($query, $configuration) {
  *      - $operator: The operator for the condition. (Default NULL)
  *  - $order: An array with settings to order the results.
  *    - $field: The field to order the results.
- *    - $direction: 'ASC' for ascending 'DESC' for descending ordering. (Default 'ASC')
+ *    - $direction: 'ASC' for ascending 'DESC' for descending ordering.
+ *      (Default 'ASC')
  *  - $range: An array to slice the results.
  *    - $from: The start value.
  *    - $amount: The maximal amount of results you want to receive.
- * @param $configuration
- *  An array with additional configuration for the execution handler:
- *    - $datasource: If only a specific datasource should be executed. (Default NULL)
+ * @param array $configuration
+ *   An array with additional configuration for the execution handler:
+ *    - $datasource: If only a specific datasource should be executed.
+ *      (Default NULL)
  *    - $cache: If FALSE no cache will be used. (Default TRUE)
+ *
  * @return array
- *  An array with datasource results keyed by the primary key.
+ *   An array with datasource results keyed by the primary key.
  */
 function wovi_datasource_execute_insert($query, $configuration) {
   $results = array();
@@ -541,12 +564,14 @@ function wovi_datasource_execute_insert($query, $configuration) {
 }
 
 /**
- * @param $primary_keys
- *  One or multiple primary keys for the given $datasource_entity_type.
- * @param $datasource_entity_type
- *  The type of the datasource entity.
- * @param $cid
- *  The cache id.
+ * Function query_cache_set().
+ *
+ * @param array $primary_keys
+ *   One or multiple primary keys for the given $datasource_entity_type.
+ * @param string $datasource_entity_type
+ *   The type of the datasource entity.
+ * @param string $cid
+ *   The cache id.
  */
 function wovi_datasource_query_cache_set($primary_keys, $datasource_entity_type, $cid) {
   foreach ($primary_keys as $primary_key) {
@@ -560,7 +585,8 @@ function wovi_datasource_query_cache_set($primary_keys, $datasource_entity_type,
     try {
       // Try to insert entry.
       drupal_write_record('wovi_datasource_entity_cache', $record);
-    } catch (PDOException $e) {
+    }
+    catch (PDOException $e) {
       if ($e->getCode() == 23000) {
         // Update entry.
         drupal_write_record('wovi_datasource_entity_cache', $record, array(
@@ -574,13 +600,15 @@ function wovi_datasource_query_cache_set($primary_keys, $datasource_entity_type,
 }
 
 /**
+ * Clears queries from cache.
+ *
  * Clears all queries from cache where datasource entities are related matching
  * $datasource_entity_type and $primary_keys.
  *
- * @param $primary_keys
- *  The primary key of the entity or entities.
- * @param $datasource_entity_type
- *  The entity datasource type.
+ * @param array $primary_keys
+ *   The primary key of the entity or entities.
+ * @param string $datasource_entity_type
+ *   The entity datasource type.
  */
 function wovi_datasource_query_cache_delete($primary_keys, $datasource_entity_type) {
   // Standardize $primary_keys to an array.
@@ -602,7 +630,7 @@ function wovi_datasource_query_cache_delete($primary_keys, $datasource_entity_ty
   // Clear all affected cached queries.
   cache_clear_all($cids, $cache_bin);
 
-  // Also delete relations from
+  // Also delete relations from.
   db_delete('wovi_datasource_entity_cache')
     ->condition('datasource_entity_type', $datasource_entity_type)
     ->condition('primary_key', $primary_keys)
@@ -611,10 +639,11 @@ function wovi_datasource_query_cache_delete($primary_keys, $datasource_entity_ty
 
 /**
  * Flushs all cached information from datasource entity cache.
+ *
  * If $cid is provided only entries with this cache id will be deleted.
  *
- * @param $cid
- *  The cache id (Default NULL)
+ * @param string $cid
+ *   The cache id (Default NULL)
  */
 function wovi_datasource_query_cache_flush($cid = NULL) {
   $query = db_delete('wovi_datasource_entity_cache');
