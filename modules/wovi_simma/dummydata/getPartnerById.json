@@ -1,0 +1,17 @@
+[{
+		"PartnerID": "17",
+		"PartnerStatus": "Active",
+		"Salutation": "Mr. Santos",
+		"PartnershipName": "Santos, Mr. Soler",
+		"EmailAddress": "westgallery@gmail.com",
+		"Preferred": null,
+		"Street1": "#3 Sulu Street",
+		"Street2": "West Avenue",
+		"Street3": "",
+		"City": "Quezon City CPO",
+		"AddDate": "1997-03-03 12:00:00 AM",
+		"UpdateDate": "2015-11-17 10:56:20 AM",
+	    "SegmentUpdateDate": "2015-11-17 10:56:20 AM",
+		"Segment": "Major",
+		"SegmentReplyTo": "a@a.com"
+}]

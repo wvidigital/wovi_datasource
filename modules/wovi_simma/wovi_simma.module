@@ -1,0 +1,966 @@
+<?php
+
+/**
+ * @file
+ * Provides access to iVision data.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function wovi_simma_menu() {
+  $items = array();
+
+  $items['admin/config/world-vision/datasource/instances/simma'] = array(
+    'title' => 'Simma API',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wovi_simma_settings_form'),
+    'access arguments' => array('administer wovi datasources'),
+    'file' => 'wovi_simma.admin.inc',
+  );
+
+  $items['admin/simmatest'] = array(
+    'title' => 'Simma API',
+    'page callback' => 'test',
+    'file' => 'Test.inc',
+  );
+
+
+  return $items;
+}
+
+/**
+ * Implements hook_wovi_datasource_info().
+ */
+function wovi_simma_wovi_datasource_info() {
+  $instances = array();
+
+  foreach (variable_get('wovi_simma_settings', array()) as $machine_name => $setting) {
+    $instances['simma_' . $machine_name] = array(
+      'name' => $setting['name'] . ' (Simma)',
+      'description' => t('Endpoint: !uri', array(
+        '!uri' => $setting['uri'],
+      )),
+      'entities' => array(
+        'si_children' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+		
+		'si_children_images' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+		
+		'si_children_project' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+		
+		
+		
+		
+		'si_children_by_date' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+        'si_partner' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+		'si_partner_by_date' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+		'si_pledges_by_date' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+		'si_pledges_by_unfulfilled_date' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+		'si_payment_list_by_date' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+		'si_payment_list_by_partnerid' => array(
+          'select' => TRUE,
+          'update' => FALSE,
+          'insert' => FALSE,
+          'delete' => FALSE,
+        ),
+      ),
+    );
+  }
+
+  return $instances;
+}
+
+/**
+ * Implements hook_wovi_datasource_entity_info().
+ */
+function wovi_simma_wovi_datasource_entity_info() {
+  $entities = array();
+
+   $entities['si_children_by_date'] =  $entities['si_children'] = array(
+    'label' => t('iVision Children'),
+    'description' => t('Represents the structure of simma children data.'),
+    'primary_key' => 'ChildID',
+    'fields' => array(
+      'ChildID' => array(
+        'label' => t('ChildID'),
+        'default value' => NULL,
+      ),
+      'name' => array(
+        'label' => t('Name'),
+        'default value' => NULL,
+      ),
+      'givenName' => array(
+        'label' => t('Given name'),
+        'default value' => NULL,
+      ),
+      'localChildGivenName' => array(
+        'label' => t('Local Given name'),
+        'default value' => NULL,
+      ),
+      'familyName' => array(
+        'label' => t('Family name'),
+        'default value' => NULL,
+      ),
+      'localChildFamilyName' => array(
+        'label' => t('Local Family name'),
+        'default value' => NULL,
+      ),
+      'birthDate' => array(
+        'label' => t('Birthday'),
+        'default value' => NULL,
+      ),
+      'isBirthDateVerified' => array(
+        'label' => t('Verified Birthday'),
+        'default value' => FALSE,
+      ),
+      'age' => array(
+        'label' => t('Age'),
+        'default value' => NULL,
+      ),
+      'childID' => array(
+        'label' => t('Child ID'),
+        'default value' => NULL,
+      ),
+      'projectID' => array(
+        'label' => t('Project ID'),
+        'default value' => NULL,
+      ),
+      'childSequence' => array(
+        'label' => t('Child Sequence'),
+        'default value' => NULL,
+      ),
+      'countryCode' => array(
+        'label' => t('Country Code'),
+        'default value' => NULL,
+      ),
+      'countryDescription' => array(
+        'label' => t('Country Description'),
+        'default value' => NULL,
+      ),
+      'genderDescription' => array(
+        'label' => t('Gender Description'),
+        'default value' => NULL,
+      ),
+      'schoolLevelDesc' => array(
+        'label' => t('School Level Description'),
+        'default value' => NULL,
+      ),
+      'gradeNumber' => array(
+        'label' => t('Grade Number Description'),
+        'default value' => NULL,
+      ),
+      'noSchoolReasonDesc' => array(
+        'label' => t('No School Reason Description'),
+        'default value' => NULL,
+      ),
+      'favouriteSubjectDesc' => array(
+        'label' => t('Favourite Subject'),
+        'default value' => NULL,
+      ),
+      'healthDesc' => array(
+        'label' => t('Healt Description'),
+        'default value' => NULL,
+      ),
+      'handicapDesc' => array(
+        'label' => t('Handicap Description'),
+        'default value' => NULL,
+      ),
+      'choreDesc' => array(
+        'label' => t('Chore Description'),
+        'default value' => NULL,
+      ),
+      'playDesc' => array(
+        'label' => t('Play Description'),
+        'default value' => NULL,
+      ),
+      'livesWithDesc' => array(
+        'label' => t('Lives with Description'),
+        'default value' => NULL,
+      ),
+      'motherStatusDesc' => array(
+        'label' => t('Mother Status Description'),
+        'default value' => NULL,
+      ),
+      'motherJobStatusDesc' => array(
+        'label' => t('Mother Job Status Description'),
+        'default value' => NULL,
+      ),
+      'fatherStatusDesc' => array(
+        'label' => t('Father Status Description'),
+        'default value' => NULL,
+      ),
+      'fatherJobStatusDesc' => array(
+        'label' => t('Father Job Description'),
+        'default value' => NULL,
+      ),
+      'brothers' => array(
+        'label' => t('Brothers'),
+        'default value' => 0,
+      ),
+      'sisters' => array(
+        'label' => t('Sisters'),
+        'default value' => 0,
+      ),
+      'peopleGroupDesc' => array(
+        'label' => t('People Group Description'),
+        'default value' => NULL,
+      ),
+      'statusID' => array(
+        'label' => t('Status ID'),
+        'default value' => NULL,
+      ),
+      'status' => array(
+        'label' => t('Status'),
+        'default value' => NULL,
+      ),
+    )
+  );
+  
+
+  
+   $entities['si_children_images'] = array(
+    'label' => t('iVision Children Images'),
+    'description' => t('Represents the structure of simma children data.'),
+    'primary_key' => 'childID',
+    'fields' => array(
+      'imageName' => array(
+        'label' => t('Image Name'),
+        'default value' => NULL,
+      ),
+      'imageSize' => array(
+        'label' => t('Image Size'),
+        'default value' => NULL,
+      ),
+      'imageData' => array(
+        'label' => t('Image Data'),
+        'default value' => NULL,
+      ),
+    )
+  );
+  
+  
+   $entities['si_children_project'] = array(
+    'label' => t('Simma Project Feed'),
+    'description' => t('Represents the structure of simma children data.'),
+    'primary_key' => 'ProjectID',
+    'fields' => array(
+      'ProjectID' => array(
+        'label' => t('ProjectID'),
+        'default value' => NULL,
+      ),
+      'CountryCode' => array(
+        'label' => t('Country Code'),
+        'default value' => NULL,
+      ),
+      'Description' => array(
+       	'label' => t('Details Description'),
+        'default value' => NULL,
+      ),
+    )
+  );
+  
+  
+   $entities['si_payment_list_by_partnerid'] =  $entities['si_payment_list_by_date'] = array(
+    'label' => t('Simma Payment List Feed'),
+    'description' => t('Payment List Certain Donor'),
+    'primary_key' => 'ID',
+    'fields' => array(
+	  'ID' => array(
+        'label' => t('ID'),
+        'default value' => NULL,
+      ),
+      'PartnerID' => array(
+        'label' => t('PartnerID'),
+        'default value' => NULL,
+      ),
+      'PaymentMethod' => array(
+        'label' => t('Payment Method'),
+        'default value' => NULL,
+      ),
+	  'Amount' => array(
+        'label' => t('Amount'),
+        'default value' => NULL,
+      ),
+	   'ReceiptDate' => array(
+        'label' => t('Receipt Date'),
+        'default value' => NULL,
+      ),
+      
+    )
+  );
+  
+  
+  
+ $entities["si_partner_by_date"] = $entities['si_partner'] = array(
+    'label' => t('Simma Partner'),
+    'description' => t('Represents the structure of simma partner data.'),
+    'primary_key' => 'PartnerID',
+    'fields' => array(
+      'PartnerID' => array(
+        'label' => t('Partner ID'),
+        'default value' => NULL,
+      ),
+	  'Salutation' => array(
+        'label' => t('Salutation'),
+        'default value' => NULL,
+      ),
+	  'PartnershipName' => array(
+        'label' => t('Partnership Name'),
+        'default value' => NULL,
+      ),
+	  'GivenName' => array(
+        'label' => t('Given Name'),
+        'default value' => NULL,
+      ),
+	  'FamilyName' => array(
+        'label' => t('Family Name'),
+        'default value' => NULL,
+      ),
+	  'MiddleName' => array(
+        'label' => t('Middle Name'),
+        'default value' => NULL,
+      ),
+	  
+	  'EmailAddress' => array(
+        'label' => t('Email'),
+        'default value' => NULL,
+      ),
+	 'Preferred' => array(
+        'label' => t('Preferred'),
+        'default value' => NULL,
+      ),
+      'PartnerStatus' => array(
+        'label' => t('Partner Status'),
+        'default value' => NULL,
+      ),
+      'Street1' => array(
+        'label' => t('Street 1'),
+        'default value' => NULL,
+      ),
+	  'Street2' => array(
+        'label' => t('Street 2'),
+        'default value' => NULL,
+      ),
+	  'Street3' => array(
+        'label' => t('Street 3'),
+        'default value' => NULL,
+      ),
+	  'City' => array(
+        'label' => t('City'),
+        'default value' => NULL,
+      ),
+	  'AddDate' => array(
+        'label' => t('AddDate'),
+        'default value' => NULL,
+      ),
+	  'UpdateDate' => array(
+        'label' => t('UpdateDate'),
+        'default value' => NULL,
+      ),
+	  'SegmentUpdateDate' => array(
+        'label' => t('SegmentUpdateDate'),
+        'default value' => NULL,
+      ),
+	  'Segment' => array(
+        'label' => t('Segment'),
+        'default value' => NULL,
+      ),
+	  'SegmentReplyTo' => array(
+        'label' => t('SegmentReplyTo'),
+        'default value' => NULL,
+      ),
+	  
+    ),
+  );
+ 
+
+ 
+  $entities['si_pledges_by_date'] = array(
+    'label' => t('Simma Pledges'),
+    'description' => t('Represents the structure of simma partner data.'),
+    'primary_key' => 'PledgeID',
+    'fields' => array(
+      'PledgeID' => array(
+        'label' => t('Pledge ID'),
+        'default value' => NULL,
+      ),
+	  'PartnerID' => array(
+        'label' => t('Partner ID'),
+        'default value' => NULL,
+      ),
+	  'ChildID' => array(
+        'label' => t('Child ID'),
+        'default value' => NULL,
+      ),
+	  'Amount' => array(
+        'label' => t('Amount'),
+        'default value' => NULL,
+      ),
+	  'PaidThruDate' => array(
+        'label' => t('Paid Thru Date'),
+        'default value' => NULL,
+      ),
+	  'PaymentMethod' => array(
+        'label' => t('Payment Method'),
+        'default value' => NULL,
+      ),
+	  
+	  'MotivationID' => array(
+        'label' => t('Motivation ID'),
+        'default value' => NULL,
+      ),
+	  'DesignationID' => array(
+        'label' => t('Designation ID'),
+        'default value' => NULL,
+      ),
+	  'AddDate' => array(
+        'label' => t('Add Date'),
+        'default value' => NULL,
+      ),
+	 
+    ),
+  );
+ $entities['si_pledges_by_unfulfilled_date']  = array(
+    'label' => t('Simma Pledges Unfullfiled'),
+    'description' => t('Represents the structure of simma partner data.'),
+    'primary_key' => 'ID',
+    'fields' => array(
+	  'ID' => array(
+        'label' => t('Unfulfilled ID'),
+        'default value' => NULL,
+      ),
+      'PartnerID' => array(
+        'label' => t('Partner ID'),
+        'default value' => NULL,
+      ),
+	  'ChildID' => array(
+        'label' => t('Child ID'),
+        'default value' => NULL,
+      ),
+	  'Frequency' => array(
+        'label' => t('Frequency'),
+        'default value' => NULL,
+      ),
+	   'Amount' => array(
+        'label' => t('Amount'),
+        'default value' => NULL,
+      ),
+	  
+	  'MotivationCode' => array(
+        'label' => t('Motivation Code'),
+        'default value' => NULL,
+      ),
+	  'DesignationCode' => array(
+        'label' => t('Destionation Code'),
+        'default value' => NULL,
+      ),
+	  
+	 
+    ),
+  );
+
+  return $entities;
+}
+
+/**
+ * Implements hook_wovi_datasource_execute_select().
+ *
+ * Executes the Simma API call with the query parameters.
+ *
+ * @param $query
+ *  The query information array containing the following information:
+ *  - $select: The entity name.
+ *  - $fields: An array of entity field names that should get returned.
+ *  - $conditions: An array of field condition arrays:
+ *    - Each array contains the following information:
+ *      - $field_name: The Field name.
+ *      - $value: The value for this condition:
+ *      - $operator: The operator for the condition. (Default NULL)
+ * @param $machine_name
+ *  The machine name of the datasource instance.
+ * @return array
+ *  An array of entity results keyed by the primary key of the entity.
+ */
+function wovi_simma_wovi_datasource_execute_select($query, $machine_name) {
+  $response = array();
+  // Initialize simma controller.
+  $simma_settings = variable_get('wovi_simma_settings', array());
+  $instance_name = preg_replace('/^simma\_/', '', $machine_name, 1);
+  if (isset($simma_settings[$instance_name])) {
+    module_load_include('php', 'wovi_simma', 'SimmaController');
+	if(isset($simma_settings[$instance_name]["pantheon_special"]['pantheon_connection']) and $simma_settings[$instance_name]["pantheon_special"]['pantheon_connection']){
+    	$simma = new SimmaController(array(
+		  'uri' => $simma_settings[$instance_name]['uri'],
+		  'pantheon_activate' => $simma_settings[$instance_name]["pantheon_special"]['pantheon_connection'],
+		  'pantheon_site_domain' => $simma_settings[$instance_name]["pantheon_special"]['pantheon_main_domain'],
+		  'pantheon_token_name' => $simma_settings[$instance_name]["pantheon_special"]['pantheon_token_name']
+    	), $simma_settings[$instance_name]['dummy_data']);
+	}else{
+		$simma = new SimmaController(array(
+		  'uri' => $simma_settings[$instance_name]['uri'] . '/',
+		  'language' => $simma_settings[$instance_name]['language'],
+		  'siteID' => $simma_settings[$instance_name]['site_id']
+    	), $simma_settings[$instance_name]['dummy_data']);
+	}
+  }
+
+  // Analyse the Query and Returns the iVision Data as Array.
+  try {
+    module_load_include('class.php', 'wovi_simma', 'RenderQueryBuilder');
+    $render_query_builder = new RenderQueryBuilder($simma);
+    $response = $render_query_builder->getQueryResult($query);
+  } catch (Exception $e) {
+    dpm($e->getMessage());
+    $response['results'] = array();
+    $response['error'] = $e->getMessage();
+  }
+
+  if ($response['error'] === FALSE) {
+    // Limit by conditions.
+    if ($query['conditions']) {
+      $filtered = array();
+
+      $datasource_entity_info = wovi_datasource_entity_get_info();
+      $primary_key = $datasource_entity_info[$query['type']]['primary_key'];
+      // Execute all conditions.
+      // @todo find an solution to group conditions logical to AND and OR conditions. @see db_and(), db_or().
+      foreach ($query['conditions'] as $condition) {
+        foreach (new iVisionResultFilter(new ArrayIterator($response['results']), $condition) as $result) {
+			$filtered[$result[$primary_key]] = $result;
+        }
+      }
+
+      $response['results'] = $filtered;
+    }
+
+    // Order by.
+    if ($query['order']) {
+      usort($response['results'], SimmaResultOrder::settings(
+        $query['order']['field'],
+        $query['order']['direction']
+      ));
+    }
+
+    // Range
+    if ($query['range']) {
+      // Slice array by given range.
+      $response['results'] = array_slice($response['results'], $query['range']['from'], $query['range']['to'], TRUE);
+    }
+
+    // Limit fields.
+    if ($query['fields']) {
+      $fields = drupal_map_assoc($query['fields']);
+      foreach ($response['results'] as &$result) {
+        $result = array_intersect_key($result, $fields);
+        //$result += array_fill_keys($query['fields'], NULL);
+
+      }
+    }
+  }
+
+  return $response;
+}
+
+/**
+ * Helper function: Checks if an simma instance name already exists.
+ *
+ * @param $name
+ *  The name to check against.
+ * @return bool
+ */
+function wovi_simma_instance_exists($name) {
+  $instances = variable_get('wovi_simma_settings', array());
+  return isset($instances[$name]);
+}
+
+/**
+ * Helper function: Builds the api uri.
+ *
+ * @param $settings
+ *  An array of api instance settings
+ *   - url: The url without schema prefix.
+ *   - site_id: The unique api site_id.
+ *   - language: The api language.
+ * @return string
+ *  The api uri as string.
+ */
+function wovi_simma_build_uri($settings) {
+  return 'https://' . $settings['uri'] ;
+  /* . '/'.$settings['site_id'] . '/' .$settings['language'];*/
+}
+
+/**
+ * Class SimmaResultOrder
+ *
+ * Helper Class: Because usort() can't handle additional arguments we build this
+ * little wrapper class that stores the our arguments $field and $direction and
+ * access them in the comparison callback that is passed to usort().
+ *
+ * @usage
+ * usort($array, SimmaResultOrder::settings('field_name', 'DESC'));
+ *
+ * @see usort()
+ */
+class SimmaResultOrder {
+  static private $order = array();
+
+  static public function settings($field, $direction = SORT_ASC, $sort = SORT_NATURAL) {
+    self::$order['field'] = $field;
+    self::$order['direction'] = ($direction == SORT_ASC) ? 1 : -1;
+    self::$order['allg'] = $sort;
+
+    return array('SimmaResultOrder', 'process');
+  }
+
+  /**
+   * The value_compare_func for usort()
+   *
+   * @param $a
+   *  First item to compare.
+   * @param $b
+   *  Second item to compare.
+   * @return int
+   *  < 0 if $a is less than $b
+   *  > 0 if $a is greater than $b
+   *  0 if they are equal.
+   *
+   * @see strnatcmp()
+   */
+  static public function process($a, $b) {
+
+    switch (self::$order['allg']) {
+      case SORT_NUMERIC:
+        $method = 'self::intcmp';
+        break;
+      case SORT_STRING:
+        $method = 'strcmp';
+        break;
+      default:
+      case SORT_NATURAL:
+        $method = 'strnatcmp';
+        break;
+    }
+
+
+    return self::$order['direction'] * $method(
+      $a[self::$order['field']],
+      $b[self::$order['field']]
+    );
+  }
+
+  /**
+   * Compare callback for numeric values.
+   *
+   * @param $a
+   *  First item to compare.
+   * @param $b
+   *  Second item to compare.
+   * @return int
+   *  < 0 if $a is less than $b
+   *  > 0 if $a is greater than $b
+   *  0 if they are equal.
+   */
+  static private function intcmp($a, $b) {
+    return $a - $b;
+  }
+}
+
+/**
+ * Class iVisionResultFilter
+ *
+ * Helper Class: Because it isn't possible to every query condition through the
+ * simma webservice api we need some helpers for post processing. This is done
+ * by an ArrayIterator and FilterIterator.
+ *
+ * @todo implement some error handling.
+ *
+ * @see FilterIterator
+ */
+class iVisionResultFilter extends FilterIterator {
+  // The condition array to check against.
+  static $operators = array(
+    '=' => 'eq',
+    '!=' => 'neq',
+    '>' => 'gt',
+    '<' => 'lt',
+    '>=' => 'gte',
+    '<=' => 'lte',
+    'in' => 'in',
+    'not in' => 'notin',
+    'like' => 'like',
+    'not like' => 'notlike',
+  );
+
+  // The operator callback mapping.
+  private $condition;
+
+  /**
+   * Constructor: Calls the parent constructor an stores the condition array.
+   *
+   * @param Iterator $iterator
+   *  The Iterator Object to use for this Filter.
+   * @param $condition
+   *  An condition array with the following values:
+   *  - $field: The field name this condition should verify.
+   *  - $value: The value this condition should match against.
+   *  - $operator: The operator this condition should use. (Default: NULL)
+   *
+   * @see Iterator
+   * @see FilterIterator::__construct()
+   */
+  public function __construct(Iterator $iterator, $condition) {
+    parent::__construct($iterator);
+    $this->condition = $condition;
+  }
+
+  /**
+   * Not Equal comparison callback.
+   *
+   * Returns the negated result of iVisionResultFilter::eq().
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   *
+   * @see iVisionResultFilter::eq()
+   */
+  static function neq($field, $condition) {
+    return !self::eq($field, $condition);
+  }
+
+  /**
+   * Equal comparison callback.
+   *
+   * If the $condition value is an array we will use iVisionResultFilter::in()
+   * for comparison to detect if the $field value matches to any of the $condition values.
+   * Otherwise we perform a simple equal comparison.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   *
+   * @see iVisionResultFilter::in()
+   */
+  static function eq($field, $condition) {
+    if (is_array($condition)) {
+      return self::in($field, $condition);
+    }
+
+    return ($field == $condition);
+  }
+
+  /**
+   * In comparison callback.
+   *
+   * Checks if an $field value matches any $condition values.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function in($field, $condition) {
+    if (!is_array($condition)) {
+      $condition = array($condition);
+    }
+    return in_array($field, $condition);
+  }
+
+  /**
+   * Greater Than comparison callback.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function gt($field, $condition) {
+    return ($field > $condition);
+  }
+
+  /**
+   * Less Than comparison callback.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function lt($field, $condition) {
+    return ($field < $condition);
+  }
+
+  /**
+   * Greater Than or Equal comparison callback.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function gte($field, $condition) {
+    return ($field >= $condition);
+  }
+
+  /**
+   * Less Than or Equal comparison callback.
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function lte($field, $condition) {
+    return ($field <= $condition);
+  }
+
+  /**
+   * Not In comparison callback.
+   *
+   * Returns the negated result of iVisionResultFilter::in().
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   *
+   * @see iVisionResultFilter::in()
+   */
+  static function notin($field, $condition) {
+    return !self::in($field, $condition);
+  }
+
+  /**
+   * Not like comparison callback.
+   *
+   * Returns the negated result of iVisionResultFilter::like().
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   *
+   * @see iVisionResultFilter::like()
+   */
+  static function notlike($field, $condition) {
+    return !self::like($field, $condition);
+  }
+
+  /**
+   * like matching callback.
+   *
+   * Generates from the query string an regex an matches against the field value.
+   *
+   * Query to regex examples:
+   * - '%string%'   => '/string/'
+   * - '%string'    => '/string$/'
+   * - 'string%'    => '/^string/'
+   * - '%str%ing%'  => '/str(.+)ing/'
+   *
+   * @param $field
+   *  The field value of the current result.
+   * @param $condition
+   *  The condition value or values.
+   * @return bool
+   *  TRUE or FALSE depending on the comparison result.
+   */
+  static function like($field, $condition) {
+    $condition = preg_replace(array(
+      '/^\%(.+)/',
+      '/(.+)\%$/',
+      '/\%/'
+    ), array(
+      '$1\$',
+      '^$1',
+      '(.+)'
+    ), $condition);
+
+    return (bool) preg_match("/$condition/", $field);
+  }
+
+  /**
+   * Implements FilterIterator::accept()
+   *
+   * @return boolean
+   *  Returns if the result matches the condition.
+   */
+  public function accept() {
+    $result = $this->getInnerIterator()->current();
+
+    if ($this->condition['operator'] === NULL) {
+      $this->condition['operator'] = 'in';
+    }
+
+    $method = self::$operators[$this->condition['operator']];
+
+    return self::$method (
+      $result[$this->condition['field']],
+      $this->condition['value']
+    );
+  }
+}

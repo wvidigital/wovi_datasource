@@ -1,0 +1,12 @@
+[
+  {
+    "languageCode": "ENU",
+    "code": "F",
+    "description": "Female"
+  },
+  {
+    "languageCode": "ENU",
+    "code": "M",
+    "description": "Male"
+  }
+]

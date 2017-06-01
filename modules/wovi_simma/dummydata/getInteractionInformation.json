@@ -1,0 +1,41 @@
+[
+  {
+    "partnerID": "000136144",
+    "templateCode": "NEUTRAL",
+    "pledgeID": "0",
+    "subjectCode": "48",
+    "subject": "",
+    "contactReference": "4",
+    "content": "lack of deposits",
+    "additionalContent1": "",
+    "additionalContent2": "",
+    "date": "12/25/2002 12:00:00 AM",
+    "entryNo": 18145
+  },
+  {
+    "partnerID": "000136144",
+    "templateCode": "NEUTRAL",
+    "pledgeID": "0",
+    "subjectCode": "48",
+    "subject": "",
+    "contactReference": "4",
+    "content": "lack of deposits",
+    "additionalContent1": "",
+    "additionalContent2": "",
+    "date": "02/25/2003 12:00:00 AM",
+    "entryNo": 38693
+  },
+  {
+    "partnerID": "000136144",
+    "templateCode": "NEUTRAL",
+    "pledgeID": "0",
+    "subjectCode": "48",
+    "subject": "",
+    "contactReference": "4",
+    "content": "lack of deposits",
+    "additionalContent1": "",
+    "additionalContent2": "",
+    "date": "03/25/2003 12:00:00 AM",
+    "entryNo": 45301
+  }
+]

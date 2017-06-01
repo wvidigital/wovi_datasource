@@ -1,0 +1,30 @@
+{
+  "iVisionID": 9,
+  "name": "Hungerkrise in Westafrika",
+  "shortDescription": "????",
+  "isEmergencyAid": true,
+  "isFeaturedDonation": false,
+  "isRecurring": false,
+  "donationPrices": [
+    {
+      "iVisionID": 9,
+      "price": 5.00000000000000000000
+    },
+    {
+      "iVisionID": 9,
+      "price": 25.00000000000000000000
+    },
+    {
+      "iVisionID": 9,
+      "price": 45.00000000000000000000
+    },
+    {
+      "iVisionID": 9,
+      "price": 75.00000000000000000000
+    },
+    {
+      "iVisionID": 9,
+      "price": 160.00000000000000000000
+    }
+  ]
+}

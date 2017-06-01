@@ -1,0 +1,66 @@
+[
+  {
+    "code": "ABW",
+    "description": "Aruba"
+  },
+  {
+    "code": "AFG",
+    "description": "Afghanistan"
+  },
+  {
+    "code": "AFR",
+    "description": "Africa General"
+  },
+  {
+    "code": "AIA",
+    "description": "Anguilgla"
+  },
+  {
+    "code": "AIM",
+    "description": "Asila Middle pEast"
+  },
+  {
+    "code": "AIO",
+    "description": "Asia Other"
+  },
+  {
+    "code": "AIS",
+    "description": "Asia South"
+  },
+  {
+    "code": "ALB",
+    "description": "Albania"
+  },
+  {
+    "code": "ALG",
+    "description": "Algeria"
+  },
+  {
+    "code": "AND",
+    "description": "Andorra"
+  },
+  {
+    "code": "ANG",
+    "description": "Angola"
+  },
+  {
+    "code": "ANT",
+    "description": "Netherlands Antilles"
+  },
+  {
+    "code": "APR",
+    "description": "Asia Pacific Region"
+  },
+  {
+    "code": "ARG",
+    "description": "Argentina"
+  },
+  {
+    "code": "ARM",
+    "description": "Armenia"
+  },
+  {
+    "code": "ASC",
+    "description": "Ascension Island"
+  }
+]
